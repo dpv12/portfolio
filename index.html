@@ -13,6 +13,7 @@
             color: #e0e0e0; 
             text-align: center;
             position: relative;
+            overflow-x: hidden;
         }
 
         /* Subtiler Grain (Körnung) Overlay */
@@ -40,7 +41,7 @@
 
         #contact-section { display: none; padding: 40px 20px; }
 
-        /* OPTIMIERTES MASONRY GITTER FÜR 3 SPALTEN AUF 1080P */
+        /* MASONRY GITTER */
         .masonry-container { 
             padding: 20px 8%; 
             max-width: 1600px; 
@@ -82,19 +83,20 @@
             position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.95);
             display: flex; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden; transition: all 0.4s ease-in-out; cursor: zoom-out;
+            opacity: 0; visibility: hidden; transition: all 0.4s ease-in-out; cursor: pointer;
+            touch-action: none; /* Verhindert Scrollen beim Wischen */
         }
         #lightbox.active { opacity: 1; visibility: visible; }
-        #lightbox img { max-width: 90%; max-height: 90%; transform: scale(0.8); transition: transform 0.4s ease; }
+        #lightbox img { 
+            max-width: 90%; max-height: 90%; 
+            transform: scale(0.8); transition: transform 0.4s ease, opacity 0.3s ease; 
+            user-select: none;
+        }
         #lightbox.active img { transform: scale(1); }
 
         /* RESPONSIVE ANPASSUNGEN */
-        @media (max-width: 1200px) { 
-            .masonry-container { column-count: 3; padding: 20px 4%; } 
-        }
-        @media (max-width: 900px) { 
-            .masonry-container { column-count: 2; padding: 20px 5%; } 
-        }
+        @media (max-width: 1200px) { .masonry-container { column-count: 3; padding: 20px 4%; } }
+        @media (max-width: 900px) { .masonry-container { column-count: 2; padding: 20px 5%; } }
         @media (max-width: 600px) { 
             .masonry-container { column-count: 1; padding: 10px 20px; } 
             header { padding: 40px 10px; }
@@ -136,11 +138,9 @@
 </header>
 
 <script>
-    // AUTOMATISCHE SPRACHERKENNUNG
+    // SPRACHERKENNUNG
     const userLang = navigator.language || navigator.userLanguage;
-    const isGerman = userLang.startsWith('de');
-
-    if (!isGerman) {
+    if (!userLang.startsWith('de')) {
         document.getElementById('nav-overview').innerText = 'Overview';
         document.getElementById('nav-contact').innerText = 'Contact';
         document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for animals, nature and travel adventures.";
@@ -155,35 +155,99 @@
         window.scrollTo(0,0);
     }
 
+    // LIGHTBOX & NAVIGATION LOGIK
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    function openLightbox(src) { lightboxImg.src = src; lightbox.classList.add('active'); }
-    function closeLightbox() { lightbox.classList.remove('active'); }
+    let currentImages = [];
+    let currentIndex = 0;
 
-    const gallery = document.getElementById('gallery');
-    const maxBilder = 30; // Erhöhe diese Zahl, wenn du mehr Fotos hochlädst!
-
-    for (let i = maxBilder; i >= 1; i--) {
-        let img = new Image();
-        img.src = 'foto' + i + '.jpg'; 
-        img.loading = "lazy";
-        
-        img.onload = function() { createItem(img); };
-        
-        // Fallback für .JPG Endung
-        img.onerror = function() {
-            let imgRetry = new Image();
-            imgRetry.src = 'foto' + i + '.JPG';
-            imgRetry.onload = function() { createItem(imgRetry); };
-        };
+    function openLightbox(index) {
+        currentIndex = index;
+        updateLightboxImage();
+        lightbox.classList.add('active');
     }
 
-    function createItem(imageElement) {
-        let div = document.createElement('div');
-        div.className = 'masonry-item';
-        div.onclick = function() { openLightbox(imageElement.src); };
-        div.appendChild(imageElement);
-        gallery.appendChild(div);
+    function closeLightbox() {
+        lightbox.classList.remove('active');
+    }
+
+    function updateLightboxImage() {
+        lightboxImg.style.opacity = '0';
+        setTimeout(() => {
+            lightboxImg.src = currentImages[currentIndex];
+            lightboxImg.style.opacity = '1';
+        }, 150);
+    }
+
+    function nextImage() {
+        currentIndex = (currentIndex + 1) % currentImages.length;
+        updateLightboxImage();
+    }
+
+    function prevImage() {
+        currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
+        updateLightboxImage();
+    }
+
+    // SWIPE LOGIK (FÜR HANDY)
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    lightbox.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, false);
+
+    lightbox.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    }, false);
+
+    function handleSwipe() {
+        if (touchEndX < touchStartX - 50) nextImage(); // Links wischen -> nächstes Bild
+        if (touchEndX > touchStartX + 50) prevImage(); // Rechts wischen -> vorheriges Bild
+    }
+
+    // TASTATUR LOGIK (FÜR PC)
+    document.addEventListener('keydown', e => {
+        if (!lightbox.classList.contains('active')) return;
+        if (e.key === "ArrowRight") nextImage();
+        if (e.key === "ArrowLeft") prevImage();
+        if (e.key === "Escape") closeLightbox();
+    });
+
+    // BILDER LADEN
+    const gallery = document.getElementById('gallery');
+    const maxBilder = 30; 
+    let loadedCount = 0;
+
+    for (let i = maxBilder; i >= 1; i--) {
+        const extensions = ['.jpg', '.JPG'];
+        tryLoad(i, 0);
+    }
+
+    function tryLoad(id, extIndex) {
+        const exts = ['.jpg', '.JPG'];
+        if (extIndex >= exts.length) return;
+
+        let img = new Image();
+        img.src = 'foto' + id + exts[extIndex];
+        img.loading = "lazy";
+        
+        img.onload = function() {
+            const indexInArray = currentImages.length;
+            currentImages.push(img.src);
+            
+            let div = document.createElement('div');
+            div.className = 'masonry-item';
+            div.onclick = (e) => {
+                e.stopPropagation();
+                openLightbox(currentImages.indexOf(img.src));
+            };
+            div.appendChild(img);
+            gallery.appendChild(div);
+        };
+
+        img.onerror = () => tryLoad(id, extIndex + 1);
     }
 </script>
 
