@@ -44,22 +44,25 @@
         .trip-post .date { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 15px; display: block; }
         .trip-post p { font-size: 16px; line-height: 1.8; color: #ccc; }
 
-        /* MASONRY GITTER (Overview) */
+        /* NEUES FLEX-MASONRY GITTER (Erzwingt feste Spalten) */
         .masonry-container { 
-            width: 100%;
-            padding: 0 4%; 
-            box-sizing: border-box;
+            display: flex;
+            flex-direction: row;
+            gap: 20px; /* Abstand zwischen den Spalten */
+            padding: 20px 3%; 
             max-width: 1600px; 
             margin: 0 auto; 
-            column-count: 3; 
-            column-gap: 20px; 
+        }
+
+        .masonry-column {
+            flex: 1; /* Alle 3 Spalten nehmen gleich viel Platz ein */
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Abstand zwischen den Bildern in einer Spalte */
         }
 
         .masonry-item { 
-            display: inline-block; 
             width: 100%; 
-            margin-bottom: 20px; 
-            break-inside: avoid; 
             cursor: pointer; 
             border-radius: 4px; 
             overflow: hidden; 
@@ -91,12 +94,13 @@
             user-select: none; transform-origin: center center;
         }
         #lightbox.active img { transform: scale(1); }
-        /* Blockiert Animationen während dem Finger-Ziehen für Echtzeit-Reaktion */
         #lightbox img.no-transition { transition: opacity 0.2s ease; }
 
-        @media (max-width: 1100px) { .masonry-container { column-count: 3; padding: 20px 4%; } }
-        @media (max-width: 850px) { .masonry-container { column-count: 2; padding: 20px 5%; } }
-        @media (max-width: 550px) { .masonry-container { column-count: 1; padding: 10px 15px; } header { padding: 40px 10px; } }
+        /* Auf Tablets und Handys werden die 3 Spalten einfach untereinander angeordnet */
+        @media (max-width: 850px) { 
+            .masonry-container { flex-direction: column; padding: 20px 5%; } 
+            header { padding: 40px 10px; }
+        }
     </style>
 </head>
 <body>
@@ -183,10 +187,7 @@
         resetZoom();
     }
 
-    function closeLightbox() { 
-        lightbox.classList.remove('active'); 
-        resetZoom(); 
-    }
+    function closeLightbox() { lightbox.classList.remove('active'); resetZoom(); }
 
     function applyTransform() {
         lightboxImg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
@@ -207,7 +208,6 @@
     function nextImage() { if(currentImages.length > 1) { currentIndex = (currentIndex + 1) % currentImages.length; updateLightboxImage(); } }
     function prevImage() { if(currentImages.length > 1) { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateLightboxImage(); } }
 
-    // PROFESIONELLE SWIPE, ZOOM & PAN LOGIK
     lightbox.addEventListener('touchstart', e => { 
         if (e.touches.length === 2) {
             isZooming = true;
@@ -217,13 +217,11 @@
             startScale = currentScale;
         } else if (e.touches.length === 1) {
             if (currentScale > 1) {
-                // Ein Finger, aber Bild ist herangezoomt -> Panning Modus
                 isPanning = true;
                 lightboxImg.classList.add('no-transition');
                 lastTouchX = e.touches[0].pageX;
                 lastTouchY = e.touches[0].pageY;
             } else {
-                // Normales Wischen vorbereiten
                 touchStartX = e.touches[0].screenX; 
             }
         }
@@ -235,11 +233,10 @@
             let currentDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             currentScale = startScale * (currentDistance / startDistance);
             if (currentScale < 1) currentScale = 1; 
-            if (currentScale > 5) currentScale = 5; // Maximaler Zoom x5
+            if (currentScale > 5) currentScale = 5; 
             applyTransform();
         } else if (isPanning && e.touches.length === 1) {
             e.preventDefault();
-            // Berechne die Fingerbewegung
             let deltaX = e.touches[0].pageX - lastTouchX;
             let deltaY = e.touches[0].pageY - lastTouchY;
             panX += deltaX;
@@ -252,7 +249,6 @@
 
     lightbox.addEventListener('touchend', e => { 
         if (e.touches.length === 1 && isZooming) {
-            // Übergang von 2 auf 1 Finger: Zoom stoppt, Panning startet nahtlos
             isZooming = false;
             if (currentScale > 1) {
                 isPanning = true;
@@ -268,13 +264,11 @@
             if (currentScale <= 1) {
                 resetZoom();
             } else {
-                // Bild bleibt gezoomt und gepannt stehen, aber weiche Animation wird wieder aktiviert
                 lightboxImg.classList.remove('no-transition');
             }
         }
 
         if (currentScale === 1 && !isZooming && !isPanning && e.changedTouches.length === 1) {
-            // Normales Blättern
             let touchEndX = e.changedTouches[0].screenX; 
             if (touchEndX < touchStartX - 40) nextImage();
             if (touchEndX > touchStartX + 40) prevImage();
@@ -288,7 +282,20 @@
         if (e.key === "Escape") closeLightbox();
     });
 
+    // NEUE LOGIK: Bilder per JS fest in 3 Spalten einsortieren
     const gallery = document.getElementById('gallery');
+    const cols = [];
+    const numCols = 3;
+
+    // Erstellt 3 unsichtbare HTML-Spalten
+    for (let i = 0; i < numCols; i++) {
+        let colDiv = document.createElement('div');
+        colDiv.className = 'masonry-column';
+        gallery.appendChild(colDiv);
+        cols.push(colDiv);
+    }
+
+    let currentCol = 0;
     const maxBilder = 30; 
 
     for (let i = maxBilder; i >= 1; i--) { tryLoad(i, 0); }
@@ -299,14 +306,19 @@
         let img = new Image();
         img.src = 'foto' + id + exts[extIndex];
         img.loading = "lazy";
+        
         img.onload = function() {
             currentImages.push(img.src);
             let div = document.createElement('div');
             div.className = 'masonry-item';
             div.onclick = (e) => { e.stopPropagation(); openLightbox(img.src); };
             div.appendChild(img);
-            gallery.appendChild(div);
+            
+            // Bild abwechselnd in Spalte 1, 2 oder 3 einfügen
+            cols[currentCol].appendChild(div);
+            currentCol = (currentCol + 1) % numCols;
         };
+        
         img.onerror = () => tryLoad(id, extIndex + 1);
     }
 </script>
