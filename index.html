@@ -13,17 +13,13 @@
             color: #e0e0e0; 
             text-align: center;
             position: relative;
+            overflow-x: hidden;
         }
 
-        /* Subtiler Grain (Körnung) Overlay */
         body::before {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/Noise_600x600.png');
-            opacity: 0.04; 
-            pointer-events: none;
-            z-index: 9999;
+            opacity: 0.04; pointer-events: none; z-index: 9999;
         }
         
         header { padding: 60px 20px 20px 20px; }
@@ -38,37 +34,23 @@
 
         .bio { max-width: 550px; margin: 0 auto; font-size: 15px; line-height: 1.6; color: #aaa; margin-bottom: 40px; padding: 0 20px; }
 
-        #contact-section { display: none; padding: 40px 20px; }
+        #contact-section, #trips-section { display: none; padding: 40px 20px; }
 
-        /* MASONRY GITTER */
-        .masonry-container { 
-            padding: 20px 8%; 
-            max-width: 1600px; 
-            margin: 0 auto; 
-            column-count: 3; 
-            column-gap: 20px; 
-        }
+        /* TRIPS BLOG STYLING */
+        .trip-post { max-width: 800px; margin: 0 auto 80px auto; text-align: left; padding: 0 20px; }
+        .trip-post img { width: 100%; border-radius: 4px; margin-bottom: 20px; cursor: pointer; transition: opacity 0.3s ease; }
+        .trip-post img:hover { opacity: 0.9; }
+        .trip-post h2 { font-size: 24px; margin-bottom: 10px; color: #fff; letter-spacing: 1px; }
+        .trip-post .date { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 15px; display: block; }
+        .trip-post p { font-size: 16px; line-height: 1.8; color: #ccc; }
 
-        .masonry-item { 
-            display: inline-block; 
-            width: 100%; 
-            margin-bottom: 20px; 
-            break-inside: avoid; 
-            cursor: pointer; 
-            border-radius: 4px; 
-            overflow: hidden; 
-            background: #222; 
-        }
-
-        .masonry-item img { 
-            width: 100%; 
-            display: block; 
-            height: auto; 
-            transition: transform 0.4s ease; 
-        }
+        /* MASONRY GITTER (Overview) */
+        .masonry-container { padding: 20px 8%; max-width: 1600px; margin: 0 auto; column-count: 3; column-gap: 20px; }
+        .masonry-item { display: inline-block; width: 100%; margin-bottom: 20px; break-inside: avoid; cursor: pointer; border-radius: 4px; overflow: hidden; background: #222; }
+        .masonry-item img { width: 100%; display: block; transition: transform 0.4s ease; }
         .masonry-item img:hover { transform: scale(1.05); }
 
-        /* Buttons Styling */
+        /* Buttons & Socials */
         .btn-container { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px; }
         .social-btn {
             text-decoration: none; color: #fff; display: inline-flex; align-items: center; gap: 10px; 
@@ -80,37 +62,27 @@
         /* LIGHTBOX */
         #lightbox {
             position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.95);
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out; cursor: pointer;
-            touch-action: none; /* Blockiert Standard-Browser-Zoom, damit unserer sauber läuft */
+            background-color: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out; cursor: zoom-out; touch-action: none;
         }
         #lightbox.active { opacity: 1; visibility: visible; }
         #lightbox img { 
             max-width: 90%; max-height: 90%; 
-            transform: scale(0.8); 
-            transition: transform 0.3s ease, opacity 0.2s ease; 
-            user-select: none;
-            transform-origin: center center;
+            transform: scale(0.8); transition: transform 0.3s ease, opacity 0.2s ease; 
+            user-select: none; transform-origin: center center;
         }
         #lightbox.active img { transform: scale(1); }
-        
-        /* Diese Klasse schaltet die Animation beim Zoomen ab, damit das Bild exakt am Finger klebt */
         #lightbox img.no-transition { transition: opacity 0.2s ease; }
 
-        /* RESPONSIVE ANPASSUNGEN */
         @media (max-width: 1200px) { .masonry-container { column-count: 3; padding: 20px 4%; } }
         @media (max-width: 900px) { .masonry-container { column-count: 2; padding: 20px 5%; } }
-        @media (max-width: 600px) { 
-            .masonry-container { column-count: 1; padding: 10px 20px; } 
-            header { padding: 40px 10px; }
-        }
+        @media (max-width: 600px) { .masonry-container { column-count: 1; padding: 10px 20px; } header { padding: 40px 10px; } }
     </style>
 </head>
 <body>
 
-<div id="lightbox" onclick="closeLightbox(event)">
-    <img id="lightbox-img" src="" alt="Zoom" onclick="event.stopPropagation()">
+<div id="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img" src="" alt="Zoom">
 </div>
 
 <header>
@@ -118,12 +90,22 @@
     
     <nav>
         <a id="nav-overview" onclick="showSection('gallery-section')">Overview</a>
+        <a id="nav-trips" onclick="showSection('trips-section')">Trips</a>
         <a id="nav-contact" onclick="showSection('contact-section')">Contact</a>
     </nav>
 
     <div id="gallery-section">
-        <p id="bio-text" class="bio">Hi, ich bin David, ein Hobbyfotograf mit Leidenschaft für Tiere, Natur und Reiseabenteuer.</p>
+        <p id="bio-text" class="bio">Hi, ich bin David, ein Hobbyfotograf mit Leidenschaft für Tiere, die Natur und Reiseabenteuer.</p>
         <div class="masonry-container" id="gallery"></div>
+    </div>
+
+    <div id="trips-section">
+        <div class="trip-post">
+            <span class="date">März 2026</span>
+            <h2 class="trip-title">Abenteuer in den Alpen</h2>
+            <img src="reisefoto1.jpg" alt="Alpen" onclick="openLightboxManual(this.src)">
+            <p class="trip-desc">Hier kannst du deine Geschichte erzählen. Wie war die Wanderung? Was hast du erlebt? Lade einfach ein Bild mit dem Namen "reisefoto1.jpg" hoch.</p>
+        </div>
     </div>
 
     <div id="contact-section">
@@ -132,7 +114,6 @@
             <a href="https://www.instagram.com/dpv0112/" target="_blank" class="social-btn">Instagram</a>
             <a href="https://www.linkedin.com/in/david-vorwerk-b04119305" target="_blank" class="social-btn">LinkedIn</a>
         </div>
-
         <div style="margin-top: 60px; opacity: 0.4; font-size: 12px; letter-spacing: 1px;">
             <p>E-Mail: <strong style="color: #aaa;">dpv01@proton.me</strong></p>
             <p style="text-transform: uppercase; margin-top: 20px;">&copy; 2026 David Vorwerk</p>
@@ -147,167 +128,166 @@
         const userLang = navigator.language || navigator.userLanguage || "en";
         if (!userLang.startsWith('de')) {
             document.getElementById('nav-overview').innerText = 'Overview';
+            document.getElementById('nav-trips').innerText = 'Trips';
             document.getElementById('nav-contact').innerText = 'Contact';
             document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for animals, nature and travel adventures.";
             document.getElementById('contact-title').innerText = 'Contact';
             document.getElementById('rights-text').innerText = 'All rights reserved. Images may not be used without permission.';
+            
+            const titles = document.getElementsByClassName('trip-title');
+            const descs = document.getElementsByClassName('trip-desc');
+            if(titles[0]) titles[0].innerText = "Adventures in the Alps";
+            if(descs[0]) descs[0].innerText = "Tell your story here. How was the hike? What did you experience? Just upload an image named reisefoto1.jpg.";
         }
-    } catch (e) {}
+    } catch(e) {}
 
     // 2. NAVIGATION
     function showSection(id) {
         document.getElementById('gallery-section').style.display = 'none';
+        document.getElementById('trips-section').style.display = 'none';
         document.getElementById('contact-section').style.display = 'none';
         document.getElementById(id).style.display = 'block';
         window.scrollTo(0,0);
     }
 
-    // 3. VARIABLEN FÜR SWIPE & ZOOM
+    // 3. LIGHTBOX LOGIK
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    let currentImages = []; 
+    let currentImages = [];
     let currentIndex = 0;
     
-    // Zoom Variablen
     let isZooming = false;
     let initialDistance = 0;
     let currentScale = 1;
 
-    // 4. BILDER LADEN
-    const gallery = document.getElementById('gallery');
-    const maxBilder = 30; 
-
-    for (let i = maxBilder; i >= 1; i--) {
-        let img = new Image();
-        img.src = 'foto' + i + '.jpg'; 
-        img.loading = "lazy";
-        
-        img.onload = function() { createItem(img); };
-        
-        img.onerror = function() {
-            let imgRetry = new Image();
-            imgRetry.src = 'foto' + i + '.JPG';
-            imgRetry.onload = function() { createItem(imgRetry); };
-        };
-    }
-
-    function createItem(imageElement) {
-        currentImages.push(imageElement.src);
-        let div = document.createElement('div');
-        div.className = 'masonry-item';
-        div.onclick = function() { openLightbox(imageElement.src); };
-        div.appendChild(imageElement);
-        gallery.appendChild(div);
-    }
-
-    // 5. LIGHTBOX & BILDWECHSEL LOGIK
     function openLightbox(src) {
         currentIndex = currentImages.indexOf(src);
         if(currentIndex === -1) currentIndex = 0; 
-        
         lightboxImg.src = currentImages[currentIndex];
         lightbox.classList.add('active');
-        
-        // Reset Zoom
+        resetZoom();
+    }
+
+    function openLightboxManual(src) {
+        lightboxImg.src = src;
+        lightbox.classList.add('active');
+        currentImages = [src];
+        currentIndex = 0;
+        resetZoom();
+    }
+
+    function closeLightbox() { 
+        lightbox.classList.remove('active'); 
+        resetZoom();
+    }
+
+    function resetZoom() {
         currentScale = 1;
         lightboxImg.style.transform = `scale(1)`;
+        lightboxImg.style.transformOrigin = 'center center';
     }
 
-    function closeLightbox(event) {
-        if (event && event.target !== lightbox) return;
-        lightbox.classList.remove('active');
-    }
-
-    function updateImage() {
-        lightboxImg.style.opacity = '0'; 
-        currentScale = 1; // Zoom beim Blättern zurücksetzen
-        lightboxImg.style.transform = `scale(1)`; 
-        
+    function updateLightboxImage() {
+        lightboxImg.style.opacity = '0';
+        resetZoom();
         setTimeout(() => {
             lightboxImg.src = currentImages[currentIndex];
-            lightboxImg.style.opacity = '1'; 
+            lightboxImg.style.opacity = '1';
         }, 150);
     }
 
-    function nextImage() {
-        if (currentImages.length === 0) return;
-        currentIndex = (currentIndex + 1) % currentImages.length;
-        updateImage();
-    }
+    function nextImage() { if(currentImages.length > 1) { currentIndex = (currentIndex + 1) % currentImages.length; updateLightboxImage(); } }
+    function prevImage() { if(currentImages.length > 1) { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateLightboxImage(); } }
 
-    function prevImage() {
-        if (currentImages.length === 0) return;
-        currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
-        updateImage();
-    }
-
-    // 6. SWIPE & PINCH-TO-ZOOM LOGIK (FÜR HANDYS)
-    let touchStartX = 0;
-
-    lightbox.addEventListener('touchstart', function(e) {
+    // 4. SWIPE & GERICHTETER ZOOM
+    let touchStartX = 0; 
+    
+    lightbox.addEventListener('touchstart', e => { 
         if (e.touches.length === 2) {
-            // Zwei Finger: Zoom-Modus startet
             isZooming = true;
-            lightboxImg.classList.add('no-transition'); // Bild klebt sofort am Finger
+            lightboxImg.classList.add('no-transition');
             
-            // Berechnet den Abstand zwischen beiden Fingern
             initialDistance = Math.hypot(
                 e.touches[0].pageX - e.touches[1].pageX,
                 e.touches[0].pageY - e.touches[1].pageY
             );
+
+            // BERECHNET DIE MITTE ZWISCHEN BEIDEN FINGERN FÜR DEN GEZIELTEN ZOOM
+            let rect = lightboxImg.getBoundingClientRect();
+            let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+            let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+            let originX = (midX / rect.width) * 100;
+            let originY = (midY / rect.height) * 100;
+            lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
+
         } else if (e.touches.length === 1 && !isZooming) {
-            // Ein Finger: Wischen vorbereiten
-            touchStartX = e.touches[0].screenX;
+            touchStartX = e.touches[0].screenX; 
         }
     }, {passive: false});
 
     lightbox.addEventListener('touchmove', function(e) {
         if (isZooming && e.touches.length === 2) {
-            e.preventDefault(); // Verhindert, dass die ganze Webseite scrollt
-            
-            // Berechnet den neuen Abstand der Finger
+            e.preventDefault(); 
             let currentDistance = Math.hypot(
                 e.touches[0].pageX - e.touches[1].pageX,
                 e.touches[0].pageY - e.touches[1].pageY
             );
-            
-            // Skaliert das Bild basierend auf der Fingerbewegung (Maximal 4-fach Zoom)
             currentScale = currentDistance / initialDistance;
             if (currentScale < 1) currentScale = 1; 
             if (currentScale > 4) currentScale = 4;
-            
             lightboxImg.style.transform = `scale(${currentScale})`;
         }
     }, {passive: false});
 
-    lightbox.addEventListener('touchend', function(e) {
+    lightbox.addEventListener('touchend', e => { 
         if (isZooming && e.touches.length === 0) {
-            // Finger losgelassen nach dem Zoomen: Bild "schnappt" weich zurück
             isZooming = false;
             currentScale = 1;
-            lightboxImg.classList.remove('no-transition'); // Animation wieder an
+            lightboxImg.classList.remove('no-transition');
             lightboxImg.style.transform = `scale(1)`;
-            return; // Kein Wischen auslösen!
+            // Setzt den Ursprung nach der Rück-Animation wieder in die Mitte
+            setTimeout(() => { lightboxImg.style.transformOrigin = 'center center'; }, 300);
+            return;
         }
 
         if (!isZooming && e.changedTouches.length === 1) {
-            // Normales Wischen (1 Finger)
-            let touchEndX = e.changedTouches[0].screenX;
-            if (touchEndX < touchStartX - 40) nextImage(); // Links -> Vor
-            if (touchEndX > touchStartX + 40) prevImage(); // Rechts -> Zurück
+            let touchEndX = e.changedTouches[0].screenX; 
+            // Verhindert versehentliches Wischen beim kurzen Antippen
+            if (touchEndX < touchStartX - 40) nextImage();
+            if (touchEndX > touchStartX + 40) prevImage();
         }
     }, {passive: false});
 
-    // 7. TASTATUR LOGIK (FÜR PC)
-    document.addEventListener('keydown', function(e) {
+    // 5. TASTATURSTEUERUNG
+    document.addEventListener('keydown', e => {
         if (!lightbox.classList.contains('active')) return;
         if (e.key === "ArrowRight") nextImage();
         if (e.key === "ArrowLeft") prevImage();
-        if (e.key === "Escape") {
-            lightbox.classList.remove('active'); 
-        }
+        if (e.key === "Escape") closeLightbox();
     });
 
+    // 6. GALERIE BILDER LADEN
+    const gallery = document.getElementById('gallery');
+    const maxBilder = 30; 
+
+    for (let i = maxBilder; i >= 1; i--) { tryLoad(i, 0); }
+
+    function tryLoad(id, extIndex) {
+        const exts = ['.jpg', '.JPG'];
+        if (extIndex >= exts.length) return;
+        let img = new Image();
+        img.src = 'foto' + id + exts[extIndex];
+        img.loading = "lazy";
+        img.onload = function() {
+            currentImages.push(img.src);
+            let div = document.createElement('div');
+            div.className = 'masonry-item';
+            div.onclick = (e) => { e.stopPropagation(); openLightbox(img.src); };
+            div.appendChild(img);
+            gallery.appendChild(div);
+        };
+        img.onerror = () => tryLoad(id, extIndex + 1);
+    }
 </script>
 
 </body>
