@@ -9,7 +9,7 @@
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             margin: 0; 
-            background-color: #1a1a1a; /* Dunkelgrau */
+            background-color: #1a1a1a; 
             color: #e0e0e0; 
             text-align: center;
             position: relative;
@@ -40,9 +40,9 @@
 
         #contact-section { display: none; padding: 40px 20px; }
 
-        /* OPTIMIERTES MASONRY GITTER */
+        /* Masonry Gitter */
         .masonry-container { 
-            padding: 20px 10%; /* 10% Rand links/rechts für den "Clean Look" */
+            padding: 20px 10%; 
             max-width: 1400px; 
             margin: 0 auto; 
             column-count: 3; 
@@ -80,7 +80,7 @@
         /* LIGHTBOX */
         #lightbox {
             position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.9);
+            background-color: rgba(0,0,0,0.95);
             display: flex; align-items: center; justify-content: center;
             opacity: 0; visibility: hidden; transition: all 0.4s ease-in-out; cursor: zoom-out;
         }
@@ -89,16 +89,10 @@
         #lightbox.active img { transform: scale(1); }
 
         /* RESPONSIVE ANPASSUNGEN */
-        @media (max-width: 1200px) {
-            .masonry-container { column-count: 3; padding: 20px 5%; }
-        }
-
-        @media (max-width: 900px) {
-            .masonry-container { column-count: 2; padding: 20px 5%; }
-        }
-
-        @media (max-width: 600px) {
-            .masonry-container { column-count: 1; padding: 10px 20px; }
+        @media (max-width: 1200px) { .masonry-container { column-count: 3; padding: 20px 5%; } }
+        @media (max-width: 900px) { .masonry-container { column-count: 2; padding: 20px 5%; } }
+        @media (max-width: 600px) { 
+            .masonry-container { column-count: 1; padding: 10px 20px; } 
             header { padding: 40px 10px; }
         }
     </style>
@@ -163,20 +157,33 @@
     }
 
     const gallery = document.getElementById('gallery');
-    const maxBilder = 100; 
+    const maxBilder = 30; // Erstmal auf 30 reduziert für schnelleres Laden am Anfang
 
     for (let i = maxBilder; i >= 1; i--) {
         let img = new Image();
-        img.src = 'foto' + i + '.jpg';
-        img.loading = "lazy"; 
+        img.src = 'foto' + i + '.jpg'; 
+        img.loading = "lazy";
         
         img.onload = function() {
-            let div = document.createElement('div');
-            div.className = 'masonry-item';
-            div.onclick = function() { openLightbox(this.firstChild.src); };
-            div.appendChild(img);
-            gallery.appendChild(div);
+            createItem(img);
         };
+        
+        // Fallback falls Datei groß geschrieben ist (.JPG)
+        img.onerror = function() {
+            let imgRetry = new Image();
+            imgRetry.src = 'foto' + i + '.JPG';
+            imgRetry.onload = function() {
+                createItem(imgRetry);
+            };
+        };
+    }
+
+    function createItem(imageElement) {
+        let div = document.createElement('div');
+        div.className = 'masonry-item';
+        div.onclick = function() { openLightbox(imageElement.src); };
+        div.appendChild(imageElement);
+        gallery.appendChild(div);
     }
 </script>
 
