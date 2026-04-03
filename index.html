@@ -301,7 +301,7 @@
         if (e.key === "Escape") closeLightbox();
     });
 
-    // NEUE SEQUENTIELLE LADE-LOGIK (Kettenreaktion für schnelles Laden)
+    // NEUE SEQUENTIELLE LADE-LOGIK (WebP -> jpg -> JPG Kettenreaktion)
     const gallery = document.getElementById('gallery');
     const cols = [];
     const numCols = 3;
@@ -323,44 +323,52 @@
         let id = currentLoadId;
         currentLoadId--;
 
-        let img = new Image(); // Wir laden das Bild unsichtbar vor
-        let srcJpg = 'foto' + id + '.jpg';
-        let srcJPG_upper = 'foto' + id + '.JPG';
+        // Diese Formate werden nacheinander getestet
+        let extensions = ['.webp', '.jpg', '.JPG'];
+        let extIndex = 0;
 
-        img.onload = function() {
-            // Erst wenn DIESES EINE Bild komplett geladen ist, wird es auf der Seite eingefügt
-            currentImages.push(img.src);
-            
-            let div = document.createElement('div');
-            div.className = 'masonry-item';
-            
-            let displayImg = document.createElement('img');
-            displayImg.src = img.src;
-            
-            div.onclick = (e) => { e.stopPropagation(); openLightbox(displayImg.src); };
-            div.appendChild(displayImg);
-            cols[currentCol].appendChild(div);
-            currentCol = (currentCol + 1) % numCols;
-
-            // ...und danach stoßen wir das NÄCHSTE Bild an
-            loadNextImage();
-        };
-
-        img.onerror = function() {
-            if (!this.retried) {
-                this.retried = true;
-                this.src = srcJPG_upper; // Check ob Großschreibung
-            } else {
-                // Bild gibt es nicht (z.B. Lücke bei foto29.jpg) -> direkt das nächste versuchen
+        function tryLoad() {
+            if (extIndex >= extensions.length) {
+                // Wenn keins der Formate existiert, einfach mit dem nächsten Bild-Code weiter machen
                 loadNextImage();
+                return;
             }
-        };
 
-        // Startschuss für den Download dieses Bildes
-        img.src = srcJpg;
+            let img = new Image();
+
+            img.onload = function() {
+                // Erst wenn das Bild da ist, wird es im HTML gebaut
+                currentImages.push(img.src);
+                
+                let div = document.createElement('div');
+                div.className = 'masonry-item';
+                
+                let displayImg = document.createElement('img');
+                displayImg.src = img.src;
+                
+                div.onclick = (e) => { e.stopPropagation(); openLightbox(displayImg.src); };
+                div.appendChild(displayImg);
+                cols[currentCol].appendChild(div);
+                currentCol = (currentCol + 1) % numCols;
+
+                // Nächstes Bild starten
+                loadNextImage();
+            };
+
+            img.onerror = function() {
+                // WebP ging nicht? Probiere .jpg. Ging nicht? Probiere .JPG
+                extIndex++;
+                tryLoad();
+            };
+
+            // Download starten
+            img.src = 'foto' + id + extensions[extIndex];
+        }
+
+        tryLoad();
     }
 
-    // Starte die Kettenreaktion
+    // Starte die Wasserfall-Ladefunktion
     loadNextImage();
 </script>
 
