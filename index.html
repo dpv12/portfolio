@@ -196,6 +196,7 @@
     function resetZoom() {
         currentScale = 1; panX = 0; panY = 0;
         isZooming = false; isPanning = false;
+        lightboxImg.style.transformOrigin = 'center center'; // Setzt den Ursprung wieder zurück
         lightboxImg.classList.remove('no-transition');
         applyTransform();
     }
@@ -214,6 +215,15 @@
             lightboxImg.classList.add('no-transition');
             startDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             startScale = currentScale;
+
+            // WIEDER EINGEBAUT: Berechnet den genauen Mittelpunkt zwischen deinen Fingern
+            let rect = lightboxImg.getBoundingClientRect();
+            let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+            let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+            let originX = (midX / rect.width) * 100;
+            let originY = (midY / rect.height) * 100;
+            lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
+
         } else if (e.touches.length === 1) {
             if (currentScale > 1) {
                 isPanning = true; lightboxImg.classList.add('no-transition');
@@ -239,7 +249,6 @@
     }, {passive: false});
 
     lightbox.addEventListener('touchend', e => { 
-        // WICHTIG: Hier ist der fehlende Block, der das Loslassen eines Fingers erkennt
         if (e.touches.length === 1 && isZooming) {
             isZooming = false;
             if (currentScale > 1) {
