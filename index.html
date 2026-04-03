@@ -40,7 +40,7 @@
 
         #contact-section { display: none; padding: 40px 20px; }
 
-        /* OPTIMIERTES MASONRY GITTER FÜR 3 SPALTEN AUF 1080P */
+        /* MASONRY GITTER */
         .masonry-container { 
             padding: 20px 8%; 
             max-width: 1600px; 
@@ -82,19 +82,20 @@
             position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.95);
             display: flex; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden; transition: all 0.4s ease-in-out; cursor: zoom-out;
+            opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out; cursor: pointer;
+            touch-action: none; /* Verhindert das Scrollen beim Wischen auf dem Handy */
         }
         #lightbox.active { opacity: 1; visibility: visible; }
-        #lightbox img { max-width: 90%; max-height: 90%; transform: scale(0.8); transition: transform 0.4s ease; }
+        #lightbox img { 
+            max-width: 90%; max-height: 90%; 
+            transform: scale(0.8); transition: transform 0.3s ease, opacity 0.2s ease; 
+            user-select: none;
+        }
         #lightbox.active img { transform: scale(1); }
 
         /* RESPONSIVE ANPASSUNGEN */
-        @media (max-width: 1200px) { 
-            .masonry-container { column-count: 3; padding: 20px 4%; } 
-        }
-        @media (max-width: 900px) { 
-            .masonry-container { column-count: 2; padding: 20px 5%; } 
-        }
+        @media (max-width: 1200px) { .masonry-container { column-count: 3; padding: 20px 4%; } }
+        @media (max-width: 900px) { .masonry-container { column-count: 2; padding: 20px 5%; } }
         @media (max-width: 600px) { 
             .masonry-container { column-count: 1; padding: 10px 20px; } 
             header { padding: 40px 10px; }
@@ -104,7 +105,7 @@
 <body>
 
 <div id="lightbox" onclick="closeLightbox()">
-    <img id="lightbox-img" src="" alt="Zoom">
+    <img id="lightbox-img" src="" alt="Zoom" onclick="event.stopPropagation()">
 </div>
 
 <header>
@@ -136,18 +137,21 @@
 </header>
 
 <script>
-    // AUTOMATISCHE SPRACHERKENNUNG
-    const userLang = navigator.language || navigator.userLanguage;
-    const isGerman = userLang.startsWith('de');
-
-    if (!isGerman) {
-        document.getElementById('nav-overview').innerText = 'Overview';
-        document.getElementById('nav-contact').innerText = 'Contact';
-        document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for animals, nature and travel adventures.";
-        document.getElementById('contact-title').innerText = 'Contact';
-        document.getElementById('rights-text').innerText = 'All rights reserved. Images may not be used without permission.';
+    // 1. SICHERE SPRACHERKENNUNG (Stürzt nicht ab, wenn der Browser es blockiert)
+    try {
+        const userLang = navigator.language || navigator.userLanguage || "en";
+        if (!userLang.startsWith('de')) {
+            document.getElementById('nav-overview').innerText = 'Overview';
+            document.getElementById('nav-contact').innerText = 'Contact';
+            document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for animals, nature and travel adventures.";
+            document.getElementById('contact-title').innerText = 'Contact';
+            document.getElementById('rights-text').innerText = 'All rights reserved. Images may not be used without permission.';
+        }
+    } catch (e) {
+        // Falls der Browser die Sprache blockiert, passiert einfach nichts (Fallback auf Deutsch)
     }
 
+    // 2. NAVIGATION
     function showSection(id) {
         document.getElementById('gallery-section').style.display = 'none';
         document.getElementById('contact-section').style.display = 'none';
@@ -155,13 +159,15 @@
         window.scrollTo(0,0);
     }
 
+    // 3. VARIABLEN FÜR SWIPE & ZOOM
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    function openLightbox(src) { lightboxImg.src = src; lightbox.classList.add('active'); }
-    function closeLightbox() { lightbox.classList.remove('active'); }
+    let currentImages = []; // Hier speichern wir die Reihenfolge der geladenen Bilder
+    let currentIndex = 0;
 
+    // 4. BILDER LADEN (Exakt deine sichere Variante)
     const gallery = document.getElementById('gallery');
-    const maxBilder = 30; // Erhöhe diese Zahl, wenn du mehr Fotos hochlädst!
+    const maxBilder = 30; 
 
     for (let i = maxBilder; i >= 1; i--) {
         let img = new Image();
@@ -170,7 +176,6 @@
         
         img.onload = function() { createItem(img); };
         
-        // Fallback für .JPG Endung
         img.onerror = function() {
             let imgRetry = new Image();
             imgRetry.src = 'foto' + i + '.JPG';
@@ -179,12 +184,69 @@
     }
 
     function createItem(imageElement) {
+        // Fügt das erfolgreich geladene Bild unserer Swipe-Liste hinzu
+        currentImages.push(imageElement.src);
+
         let div = document.createElement('div');
         div.className = 'masonry-item';
         div.onclick = function() { openLightbox(imageElement.src); };
         div.appendChild(imageElement);
         gallery.appendChild(div);
     }
+
+    // 5. LIGHTBOX & SWIPE LOGIK
+    function openLightbox(src) {
+        currentIndex = currentImages.indexOf(src);
+        if(currentIndex === -1) currentIndex = 0; // Sicherheit
+        
+        lightboxImg.src = currentImages[currentIndex];
+        lightbox.classList.add('active');
+    }
+
+    function closeLightbox() {
+        lightbox.classList.remove('active');
+    }
+
+    function updateImage() {
+        lightboxImg.style.opacity = '0'; // Kurzes Ausblenden
+        setTimeout(() => {
+            lightboxImg.src = currentImages[currentIndex];
+            lightboxImg.style.opacity = '1'; // Neues Bild einblenden
+        }, 150);
+    }
+
+    function nextImage() {
+        if (currentImages.length === 0) return;
+        currentIndex = (currentIndex + 1) % currentImages.length;
+        updateImage();
+    }
+
+    function prevImage() {
+        if (currentImages.length === 0) return;
+        currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
+        updateImage();
+    }
+
+    // Handysteuerung (Wischen)
+    let touchStartX = 0;
+    lightbox.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+
+    lightbox.addEventListener('touchend', function(e) {
+        let touchEndX = e.changedTouches[0].screenX;
+        if (touchEndX < touchStartX - 40) nextImage(); // nach links
+        if (touchEndX > touchStartX + 40) prevImage(); // nach rechts
+    }, {passive: true});
+
+    // Tastatursteuerung (Pfeiltasten am PC)
+    document.addEventListener('keydown', function(e) {
+        if (!lightbox.classList.contains('active')) return;
+        if (e.key === "ArrowRight") nextImage();
+        if (e.key === "ArrowLeft") prevImage();
+        if (e.key === "Escape") closeLightbox();
+    });
+
 </script>
 
 </body>
