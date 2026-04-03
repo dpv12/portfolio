@@ -92,9 +92,9 @@
             transform: scale(1) translate(0px, 0px); 
             transition: transform 0.3s ease, opacity 0.2s ease; 
             user-select: none; 
-            -webkit-user-drag: none; /* Verhindert das "Ziehen" des Bildes als Datei */
+            -webkit-user-drag: none; 
             transform-origin: center center;
-            cursor: zoom-out; /* Zeigt die Zoom-Out Lupe beim Hovern an */
+            cursor: zoom-out; 
         }
         #lightbox.active img { transform: scale(1); }
         #lightbox img.no-transition { transition: opacity 0.2s ease; }
@@ -163,6 +163,7 @@
     let currentImages = [];
     let currentIndex = 0;
     
+    // Zoom & Pan Variablen
     let isZooming = false;
     let isPanning = false;
     let currentScale = 1;
@@ -274,19 +275,17 @@
             return;
         }
 
+        // Variable, um zu prüfen, ob das Bild im Moment des Loslassens gezoomt/gepannt war
+        let wasZoomedOrPanned = isZooming || isPanning || currentScale > 1;
+
         if (e.touches.length === 0) {
-            isZooming = false;
-            isPanning = false;
-            if (currentScale <= 1) {
-                resetZoom();
-            } else {
-                lightboxImg.classList.remove('no-transition');
-            }
+            // Sobald der letzte Finger das Display verlässt: IMMER auf Standard zurücksetzen
+            resetZoom();
         }
 
-        if (currentScale === 1 && !isZooming && !isPanning && e.changedTouches.length === 1) {
+        // Swipe nur ausführen, wenn das Bild im Normalzustand war (nicht gezoomt)
+        if (!wasZoomedOrPanned && e.changedTouches.length === 1) {
             let touchEndX = e.changedTouches[0].screenX; 
-            // Nur Wischen, wenn es eine wirkliche Bewegung war, um Klicks zu erlauben
             if (touchEndX < touchStartX - 40) nextImage();
             else if (touchEndX > touchStartX + 40) prevImage();
         }
