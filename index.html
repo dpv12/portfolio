@@ -130,8 +130,10 @@
             </a>
         </div>
 
-        <div style="margin-top: 50px; color: #666; font-size: 13px;">
+        <div style="margin-top: 60px; opacity: 0.4; font-size: 12px; letter-spacing: 1px;">
             <p>E-Mail: <strong style="color: #aaa;">dpv01@proton.me</strong></p>
+            <p style="text-transform: uppercase; margin-top: 20px;">&copy; 2026 David Vorwerk</p>
+            <p style="font-style: italic; font-size: 10px; margin-top: 5px;">All rights reserved. Images may not be used without permission.</p>
         </div>
     </div>
 </header>
@@ -157,7 +159,7 @@
     }
 
     const gallery = document.getElementById('gallery');
-    const maxBilder = 30; // Erstmal auf 30 reduziert für schnelleres Laden am Anfang
+    const maxBilder = 30; 
 
     for (let i = maxBilder; i >= 1; i--) {
         let img = new Image();
@@ -168,7 +170,6 @@
             createItem(img);
         };
         
-        // Fallback falls Datei groß geschrieben ist (.JPG)
         img.onerror = function() {
             let imgRetry = new Image();
             imgRetry.src = 'foto' + i + '.JPG';
@@ -188,4 +189,5 @@
 </script>
 
 </body>
+</html>
 </html>
