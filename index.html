@@ -49,31 +49,26 @@
 
         #contact-section, #trips-section { display: none; padding: 40px 20px; }
 
-        /* MASONRY GITTER */
+        /* NEUES UNIFORMES RASTER (GRID) FÜR DIE GALERIE */
         .masonry-container { 
-            display: flex;
-            flex-direction: row;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Erzwingt exakt 3 gleich breite Spalten */
             gap: 20px; 
             padding: 20px 3%; 
             max-width: 1600px; 
             margin: 0 auto; 
         }
 
-        .masonry-column {
-            flex: 1; 
-            display: flex;
-            flex-direction: column;
-            gap: 20px; 
-        }
-
         .masonry-item { 
             width: 100%; 
+            aspect-ratio: 1 / 1; /* Macht alle Boxen zu perfekten Quadraten! (Alternativ: 4 / 3) */
             cursor: pointer; 
             border-radius: 4px; 
             overflow: hidden; 
             background: #222; 
             animation: fadeIn 0.6s ease-out forwards;
             opacity: 0;
+            position: relative;
         }
 
         @keyframes fadeIn {
@@ -83,6 +78,8 @@
 
         .masonry-item img { 
             width: 100%; 
+            height: 100%; /* Zwingt das Bild, die ganze Boxshöhe einzunehmen */
+            object-fit: cover; /* Schneidet die überstehenden Ränder sanft ab, füllt aber alles aus */
             display: block; 
             transition: transform 0.4s ease;
             background-color: #333; 
@@ -91,7 +88,7 @@
             pointer-events: none; 
             -webkit-touch-callout: none; 
         }
-        .masonry-item img:hover { transform: scale(1.05); }
+        .masonry-item:hover img { transform: scale(1.05); }
 
         /* LIGHTBOX */
         #lightbox {
@@ -126,8 +123,12 @@
         }
         .social-btn:hover { background-color: #fff; color: #000; }
 
-        @media (max-width: 850px) { 
-            .masonry-container { flex-direction: column; padding: 20px 5%; } 
+        /* Responsive Anpassungen für Tablets und Handys */
+        @media (max-width: 950px) { 
+            .masonry-container { grid-template-columns: repeat(2, 1fr); padding: 20px 4%; } 
+        }
+        @media (max-width: 600px) { 
+            .masonry-container { grid-template-columns: 1fr; padding: 10px 5%; } 
             header { padding: 40px 10px; }
         }
     </style>
@@ -238,14 +239,12 @@
             startDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             startScale = currentScale;
 
-            // BUGFIX: Zielsicherer Zoom - unbeeindruckt von laufenden CSS-Animationen
             if (currentScale <= 1.05) {
                 currentScale = 1; panX = 0; panY = 0;
                 
                 let imgW = lightboxImg.offsetWidth;
                 let imgH = lightboxImg.offsetHeight;
                 
-                // Berechnet die echte, feste Position des Bildes auf dem Bildschirm
                 let imgL = (window.innerWidth - imgW) / 2;
                 let imgT = (window.innerHeight - imgH) / 2;
 
@@ -314,18 +313,8 @@
         if (e.key === "Escape") closeLightbox();
     });
 
+    // DYNAMISCHE GITHUB-API LADE-LOGIK (Ohne JS-Spalten, direkt ins CSS-Grid!)
     const gallery = document.getElementById('gallery');
-    const cols = [];
-    const numCols = 3;
-
-    for (let i = 0; i < numCols; i++) {
-        let colDiv = document.createElement('div');
-        colDiv.className = 'masonry-column';
-        gallery.appendChild(colDiv);
-        cols.push(colDiv);
-    }
-
-    let currentCol = 0;
 
     async function fetchAndLoadImages() {
         try {
@@ -364,8 +353,9 @@
             div.appendChild(imgElement);
             
             div.onclick = (e) => { e.stopPropagation(); openLightbox(imgElement.src); };
-            cols[currentCol].appendChild(div);
-            currentCol = (currentCol + 1) % numCols;
+            
+            // Bild direkt in die Galerie einfügen (Das CSS Grid ordnet es automatisch an)
+            gallery.appendChild(div);
 
             loadDynamicImage(imageArray, index + 1);
         };
