@@ -14,6 +14,12 @@
             text-align: center;
             position: relative;
             overflow-x: hidden;
+            
+            /* Kopierschutz: Verhindert das Markieren von Text und Elementen */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         body::before {
@@ -73,6 +79,10 @@
             display: block; 
             transition: transform 0.4s ease;
             background-color: #333; 
+
+            /* KOPIERSCHUTZ GALERIE */
+            pointer-events: none; /* Blockiert Klicks auf das Bild direkt (Klick geht an den Container) */
+            -webkit-touch-callout: none; /* Blockiert "Bild Speichern" Menü am iPhone */
         }
         .masonry-item img:hover { transform: scale(1.05); }
 
@@ -91,6 +101,10 @@
             -webkit-user-drag: none; 
             transform-origin: center center;
             cursor: zoom-out; 
+
+            /* KOPIERSCHUTZ LIGHTBOX */
+            pointer-events: none; /* Verhindert langes Drücken am Handy */
+            -webkit-touch-callout: none;
         }
         #lightbox.active img { transform: scale(1); }
         #lightbox img.no-transition { transition: opacity 0.2s ease; }
@@ -101,6 +115,8 @@
             text-decoration: none; color: #fff; display: inline-flex; align-items: center; gap: 10px; 
             border: 1px solid #444; padding: 12px 25px; border-radius: 50px; font-weight: bold; 
             transition: all 0.3s ease; width: 220px; justify-content: center; background: rgba(255,255,255,0.05);
+            /* Buttons müssen klickbar bleiben: */
+            pointer-events: auto; 
         }
         .social-btn:hover { background-color: #fff; color: #000; }
 
@@ -110,7 +126,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
 <div id="lightbox" onclick="closeLightbox()">
     <img id="lightbox-img" src="" alt="Zoom" draggable="false">
@@ -125,7 +141,7 @@
     </nav>
 
     <div id="gallery-section">
-        <p id="bio-text" class="bio">Hi, ich bin David, ein Hobbyfotograf mit Leidenschaft für Tiere, die Natur und Reiseabenteuer.</p>
+        <p id="bio-text" class="bio">Hi, ich bin David, ein Hobbyfotograf mit Leidenschaft für Natur, Tiere und Reiseabenteuer.</p>
         <div class="masonry-container" id="gallery"></div>
     </div>
 
@@ -149,7 +165,7 @@
         if (!userLang.startsWith('de')) {
             document.getElementById('nav-overview').innerText = 'Overview';
             document.getElementById('nav-contact').innerText = 'Contact';
-            document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for animals, nature and travel adventures.";
+            document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for nature, animals and travel adventures.";
             document.getElementById('contact-title').innerText = 'Contact';
             document.getElementById('rights-text').innerText = 'All rights reserved. Images may not be used without permission.';
         }
@@ -196,7 +212,7 @@
     function resetZoom() {
         currentScale = 1; panX = 0; panY = 0;
         isZooming = false; isPanning = false;
-        lightboxImg.style.transformOrigin = 'center center'; // Setzt den Ursprung wieder zurück
+        lightboxImg.style.transformOrigin = 'center center'; 
         lightboxImg.classList.remove('no-transition');
         applyTransform();
     }
@@ -216,13 +232,16 @@
             startDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             startScale = currentScale;
 
-            // WIEDER EINGEBAUT: Berechnet den genauen Mittelpunkt zwischen deinen Fingern
-            let rect = lightboxImg.getBoundingClientRect();
-            let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-            let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-            let originX = (midX / rect.width) * 100;
-            let originY = (midY / rect.height) * 100;
-            lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
+            // BUGFIX: Setzt den Zoom-Fokus nur neu, wenn das Bild noch nicht verschoben wurde.
+            // Sonst kollidiert die Positionierung mit dem bereits verschobenen Bild und es springt!
+            if (currentScale === 1) {
+                let rect = lightboxImg.getBoundingClientRect();
+                let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                let originX = (midX / rect.width) * 100;
+                let originY = (midY / rect.height) * 100;
+                lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
+            }
 
         } else if (e.touches.length === 1) {
             if (currentScale > 1) {
@@ -279,7 +298,7 @@
         if (e.key === "Escape") closeLightbox();
     });
 
-    // PARALLELE LADE-LOGIK (Wasserfall-Bremse gelöst)
+    // DYNAMISCHE GITHUB-API LADE-LOGIK
     const gallery = document.getElementById('gallery');
     const cols = [];
     const numCols = 3;
@@ -292,47 +311,58 @@
     }
 
     let currentCol = 0;
-    const maxBilder = 30; 
 
-    // Wir laden die Bilder jetzt parallel
-    for (let i = maxBilder; i >= 1; i--) {
-        const id = i;
-        const div = document.createElement('div');
+    async function fetchAndLoadImages() {
+        try {
+            const response = await fetch('https://api.github.com/repos/dpv12/portfolio/contents/');
+            if (!response.ok) throw new Error('Netzwerk antwortet nicht');
+            const data = await response.json();
+
+            let images = data.filter(file => 
+                file.name.match(/\.(webp|jpe?g|png)$/i) && 
+                file.name.toLowerCase() !== 'profil.jpg' &&
+                !file.name.toLowerCase().includes('reisefoto')
+            );
+
+            images.sort((a, b) => b.name.localeCompare(a.name));
+            loadDynamicImage(images, 0);
+
+        } catch (error) {
+            console.error("Konnte GitHub API nicht abfragen:", error);
+        }
+    }
+
+    function loadDynamicImage(imageArray, index) {
+        if (index >= imageArray.length) return; 
+
+        let fileData = imageArray[index];
+        let div = document.createElement('div');
         div.className = 'masonry-item';
         
-        const imgElement = document.createElement('img');
+        let imgElement = document.createElement('img');
         imgElement.loading = "lazy";
+        let tempImg = new Image();
         
-        const extensions = ['.webp', '.jpg', '.JPG'];
-        let extIdx = 0;
+        tempImg.onload = function() {
+            imgElement.src = tempImg.src;
+            currentImages.push(imgElement.src);
+            div.appendChild(imgElement);
+            
+            div.onclick = (e) => { e.stopPropagation(); openLightbox(imgElement.src); };
+            cols[currentCol].appendChild(div);
+            currentCol = (currentCol + 1) % numCols;
 
-        function tryLoad() {
-            if (extIdx >= extensions.length) {
-                div.remove(); 
-                return;
-            }
-            
-            const tempImg = new Image();
-            tempImg.src = 'foto' + id + extensions[extIdx];
-            
-            tempImg.onload = function() {
-                imgElement.src = tempImg.src;
-                currentImages.push(imgElement.src);
-                div.appendChild(imgElement);
-            };
-            
-            tempImg.onerror = function() {
-                extIdx++;
-                tryLoad();
-            };
-        }
-
-        div.onclick = (e) => { e.stopPropagation(); openLightbox(imgElement.src); };
-        cols[currentCol].appendChild(div);
-        currentCol = (currentCol + 1) % numCols;
+            loadDynamicImage(imageArray, index + 1);
+        };
         
-        tryLoad();
+        tempImg.onerror = function() {
+            loadDynamicImage(imageArray, index + 1);
+        };
+
+        tempImg.src = fileData.name;
     }
+
+    fetchAndLoadImages();
 </script>
 
 </body>
