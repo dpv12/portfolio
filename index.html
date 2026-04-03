@@ -44,9 +44,25 @@
         .trip-post .date { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 15px; display: block; }
         .trip-post p { font-size: 16px; line-height: 1.8; color: #ccc; }
 
-        /* MASONRY GITTER (Overview) */
-        .masonry-container { padding: 20px 8%; max-width: 1600px; margin: 0 auto; column-count: 3; column-gap: 20px; }
-        .masonry-item { display: inline-block; width: 100%; margin-bottom: 20px; break-inside: avoid; cursor: pointer; border-radius: 4px; overflow: hidden; background: #222; }
+        /* MASONRY GITTER (Overview) - ERZWUNGENE 3 SPALTEN */
+        .masonry-container { 
+            padding: 20px 3%; /* Rand reduziert für maximale Breite */
+            max-width: 1800px; /* Erlaubt dem Gitter, sich weiter auszudehnen */
+            margin: 0 auto; 
+            column-count: 3; 
+            column-gap: 15px; /* Abstand zwischen Bildern leicht verringert */
+        }
+
+        .masonry-item { 
+            display: inline-block; 
+            width: 100%; 
+            margin-bottom: 15px; 
+            break-inside: avoid; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            background: #222; 
+        }
         .masonry-item img { width: 100%; display: block; transition: transform 0.4s ease; }
         .masonry-item img:hover { transform: scale(1.05); }
 
@@ -74,9 +90,9 @@
         #lightbox.active img { transform: scale(1); }
         #lightbox img.no-transition { transition: opacity 0.2s ease; }
 
-        @media (max-width: 1200px) { .masonry-container { column-count: 3; padding: 20px 4%; } }
-        @media (max-width: 900px) { .masonry-container { column-count: 2; padding: 20px 5%; } }
-        @media (max-width: 600px) { .masonry-container { column-count: 1; padding: 10px 20px; } header { padding: 40px 10px; } }
+        /* NEUE UMBRUCH-PUNKTE: Bleibt viel länger auf 3 Spalten */
+        @media (max-width: 850px) { .masonry-container { column-count: 2; padding: 20px 4%; } }
+        @media (max-width: 550px) { .masonry-container { column-count: 1; padding: 10px 15px; } header { padding: 40px 10px; } }
     </style>
 </head>
 <body>
@@ -90,22 +106,12 @@
     
     <nav>
         <a id="nav-overview" onclick="showSection('gallery-section')">Overview</a>
-        <a id="nav-trips" onclick="showSection('trips-section')">Trips</a>
         <a id="nav-contact" onclick="showSection('contact-section')">Contact</a>
     </nav>
 
     <div id="gallery-section">
         <p id="bio-text" class="bio">Hi, ich bin David, ein Hobbyfotograf mit Leidenschaft für Tiere, die Natur und Reiseabenteuer.</p>
         <div class="masonry-container" id="gallery"></div>
-    </div>
-
-    <div id="trips-section">
-        <div class="trip-post">
-            <span class="date">März 2026</span>
-            <h2 class="trip-title">Abenteuer in den Alpen</h2>
-            <img src="reisefoto1.jpg" alt="Alpen" onclick="openLightboxManual(this.src)">
-            <p class="trip-desc">Hier kannst du deine Geschichte erzählen. Wie war die Wanderung? Was hast du erlebt? Lade einfach ein Bild mit dem Namen "reisefoto1.jpg" hoch.</p>
-        </div>
     </div>
 
     <div id="contact-section">
@@ -123,39 +129,29 @@
 </header>
 
 <script>
-    // 1. SICHERE SPRACHERKENNUNG
     try {
         const userLang = navigator.language || navigator.userLanguage || "en";
         if (!userLang.startsWith('de')) {
             document.getElementById('nav-overview').innerText = 'Overview';
-            document.getElementById('nav-trips').innerText = 'Trips';
             document.getElementById('nav-contact').innerText = 'Contact';
             document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for animals, nature and travel adventures.";
             document.getElementById('contact-title').innerText = 'Contact';
             document.getElementById('rights-text').innerText = 'All rights reserved. Images may not be used without permission.';
-            
-            const titles = document.getElementsByClassName('trip-title');
-            const descs = document.getElementsByClassName('trip-desc');
-            if(titles[0]) titles[0].innerText = "Adventures in the Alps";
-            if(descs[0]) descs[0].innerText = "Tell your story here. How was the hike? What did you experience? Just upload an image named reisefoto1.jpg.";
         }
     } catch(e) {}
 
-    // 2. NAVIGATION
     function showSection(id) {
         document.getElementById('gallery-section').style.display = 'none';
-        document.getElementById('trips-section').style.display = 'none';
+        document.getElementById('trips-section') ? document.getElementById('trips-section').style.display = 'none' : null;
         document.getElementById('contact-section').style.display = 'none';
         document.getElementById(id).style.display = 'block';
         window.scrollTo(0,0);
     }
 
-    // 3. LIGHTBOX LOGIK
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
     let currentImages = [];
     let currentIndex = 0;
-    
     let isZooming = false;
     let initialDistance = 0;
     let currentScale = 1;
@@ -176,50 +172,28 @@
         resetZoom();
     }
 
-    function closeLightbox() { 
-        lightbox.classList.remove('active'); 
-        resetZoom();
-    }
-
-    function resetZoom() {
-        currentScale = 1;
-        lightboxImg.style.transform = `scale(1)`;
-        lightboxImg.style.transformOrigin = 'center center';
-    }
-
+    function closeLightbox() { lightbox.classList.remove('active'); resetZoom(); }
+    function resetZoom() { currentScale = 1; lightboxImg.style.transform = `scale(1)`; lightboxImg.style.transformOrigin = 'center center'; }
     function updateLightboxImage() {
-        lightboxImg.style.opacity = '0';
-        resetZoom();
-        setTimeout(() => {
-            lightboxImg.src = currentImages[currentIndex];
-            lightboxImg.style.opacity = '1';
-        }, 150);
+        lightboxImg.style.opacity = '0'; resetZoom();
+        setTimeout(() => { lightboxImg.src = currentImages[currentIndex]; lightboxImg.style.opacity = '1'; }, 150);
     }
 
     function nextImage() { if(currentImages.length > 1) { currentIndex = (currentIndex + 1) % currentImages.length; updateLightboxImage(); } }
     function prevImage() { if(currentImages.length > 1) { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateLightboxImage(); } }
 
-    // 4. SWIPE & GERICHTETER ZOOM
     let touchStartX = 0; 
-    
     lightbox.addEventListener('touchstart', e => { 
         if (e.touches.length === 2) {
             isZooming = true;
             lightboxImg.classList.add('no-transition');
-            
-            initialDistance = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
-
-            // BERECHNET DIE MITTE ZWISCHEN BEIDEN FINGERN FÜR DEN GEZIELTEN ZOOM
+            initialDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             let rect = lightboxImg.getBoundingClientRect();
             let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
             let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
             let originX = (midX / rect.width) * 100;
             let originY = (midY / rect.height) * 100;
             lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
-
         } else if (e.touches.length === 1 && !isZooming) {
             touchStartX = e.touches[0].screenX; 
         }
@@ -228,10 +202,7 @@
     lightbox.addEventListener('touchmove', function(e) {
         if (isZooming && e.touches.length === 2) {
             e.preventDefault(); 
-            let currentDistance = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
+            let currentDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             currentScale = currentDistance / initialDistance;
             if (currentScale < 1) currentScale = 1; 
             if (currentScale > 4) currentScale = 4;
@@ -241,24 +212,19 @@
 
     lightbox.addEventListener('touchend', e => { 
         if (isZooming && e.touches.length === 0) {
-            isZooming = false;
-            currentScale = 1;
+            isZooming = false; currentScale = 1;
             lightboxImg.classList.remove('no-transition');
             lightboxImg.style.transform = `scale(1)`;
-            // Setzt den Ursprung nach der Rück-Animation wieder in die Mitte
             setTimeout(() => { lightboxImg.style.transformOrigin = 'center center'; }, 300);
             return;
         }
-
         if (!isZooming && e.changedTouches.length === 1) {
             let touchEndX = e.changedTouches[0].screenX; 
-            // Verhindert versehentliches Wischen beim kurzen Antippen
             if (touchEndX < touchStartX - 40) nextImage();
             if (touchEndX > touchStartX + 40) prevImage();
         }
     }, {passive: false});
 
-    // 5. TASTATURSTEUERUNG
     document.addEventListener('keydown', e => {
         if (!lightbox.classList.contains('active')) return;
         if (e.key === "ArrowRight") nextImage();
@@ -266,7 +232,6 @@
         if (e.key === "Escape") closeLightbox();
     });
 
-    // 6. GALERIE BILDER LADEN
     const gallery = document.getElementById('gallery');
     const maxBilder = 30; 
 
