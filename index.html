@@ -44,7 +44,7 @@
         .trip-post .date { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 15px; display: block; }
         .trip-post p { font-size: 16px; line-height: 1.8; color: #ccc; }
 
-        /* NEUES FLEX-MASONRY GITTER (Erzwingt feste Spalten) */
+        /* MASONRY GITTER (Erzwingt feste Spalten) */
         .masonry-container { 
             display: flex;
             flex-direction: row;
@@ -67,8 +67,21 @@
             border-radius: 4px; 
             overflow: hidden; 
             background: #222; 
+            /* Weiches Einblenden für den "Wasserfall"-Effekt */
+            animation: fadeIn 0.5s ease-in-out;
         }
-        .masonry-item img { width: 100%; display: block; transition: transform 0.4s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .masonry-item img { 
+            width: 100%; 
+            display: block; 
+            transition: transform 0.4s ease;
+            background-color: #333; 
+        }
         .masonry-item img:hover { transform: scale(1.05); }
 
         /* Buttons & Socials */
@@ -181,14 +194,6 @@
         resetZoom();
     }
 
-    function openLightboxManual(src) {
-        lightboxImg.src = src;
-        lightbox.classList.add('active');
-        currentImages = [src];
-        currentIndex = 0;
-        resetZoom();
-    }
-
     function closeLightbox() { 
         lightbox.classList.remove('active'); 
         resetZoom(); 
@@ -224,7 +229,7 @@
         } 
     }
 
-    // Touch-Steuerung für Handys (Zoom, Pan, Swipe)
+    // Touch-Steuerung für Handys
     lightbox.addEventListener('touchstart', e => { 
         if (e.touches.length === 2) {
             isZooming = true;
@@ -275,15 +280,12 @@
             return;
         }
 
-        // Variable, um zu prüfen, ob das Bild im Moment des Loslassens gezoomt/gepannt war
         let wasZoomedOrPanned = isZooming || isPanning || currentScale > 1;
 
         if (e.touches.length === 0) {
-            // Sobald der letzte Finger das Display verlässt: IMMER auf Standard zurücksetzen
             resetZoom();
         }
 
-        // Swipe nur ausführen, wenn das Bild im Normalzustand war (nicht gezoomt)
         if (!wasZoomedOrPanned && e.changedTouches.length === 1) {
             let touchEndX = e.changedTouches[0].screenX; 
             if (touchEndX < touchStartX - 40) nextImage();
@@ -299,6 +301,7 @@
         if (e.key === "Escape") closeLightbox();
     });
 
+    // NEUE SEQUENTIELLE LADE-LOGIK (Kettenreaktion für schnelles Laden)
     const gallery = document.getElementById('gallery');
     const cols = [];
     const numCols = 3;
@@ -312,28 +315,53 @@
 
     let currentCol = 0;
     const maxBilder = 30; 
+    let currentLoadId = maxBilder;
 
-    for (let i = maxBilder; i >= 1; i--) { tryLoad(i, 0); }
+    function loadNextImage() {
+        if (currentLoadId < 1) return; // Wenn alle Zahlen durch sind, aufhören
 
-    function tryLoad(id, extIndex) {
-        const exts = ['.jpg', '.JPG'];
-        if (extIndex >= exts.length) return;
-        let img = new Image();
-        img.src = 'foto' + id + exts[extIndex];
-        img.loading = "lazy";
-        
+        let id = currentLoadId;
+        currentLoadId--;
+
+        let img = new Image(); // Wir laden das Bild unsichtbar vor
+        let srcJpg = 'foto' + id + '.jpg';
+        let srcJPG_upper = 'foto' + id + '.JPG';
+
         img.onload = function() {
+            // Erst wenn DIESES EINE Bild komplett geladen ist, wird es auf der Seite eingefügt
             currentImages.push(img.src);
+            
             let div = document.createElement('div');
             div.className = 'masonry-item';
-            div.onclick = (e) => { e.stopPropagation(); openLightbox(img.src); };
-            div.appendChild(img);
+            
+            let displayImg = document.createElement('img');
+            displayImg.src = img.src;
+            
+            div.onclick = (e) => { e.stopPropagation(); openLightbox(displayImg.src); };
+            div.appendChild(displayImg);
             cols[currentCol].appendChild(div);
             currentCol = (currentCol + 1) % numCols;
+
+            // ...und danach stoßen wir das NÄCHSTE Bild an
+            loadNextImage();
         };
-        
-        img.onerror = () => tryLoad(id, extIndex + 1);
+
+        img.onerror = function() {
+            if (!this.retried) {
+                this.retried = true;
+                this.src = srcJPG_upper; // Check ob Großschreibung
+            } else {
+                // Bild gibt es nicht (z.B. Lücke bei foto29.jpg) -> direkt das nächste versuchen
+                loadNextImage();
+            }
+        };
+
+        // Startschuss für den Download dieses Bildes
+        img.src = srcJpg;
     }
+
+    // Starte die Kettenreaktion
+    loadNextImage();
 </script>
 
 </body>
