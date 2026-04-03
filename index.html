@@ -13,13 +13,17 @@
             color: #e0e0e0; 
             text-align: center;
             position: relative;
-            overflow-x: hidden;
         }
 
+        /* Subtiler Grain (Körnung) Overlay */
         body::before {
-            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/Noise_600x600.png');
-            opacity: 0.04; pointer-events: none; z-index: 9999;
+            opacity: 0.04; 
+            pointer-events: none;
+            z-index: 9999;
         }
         
         header { padding: 60px 20px 20px 20px; }
@@ -34,20 +38,37 @@
 
         .bio { max-width: 550px; margin: 0 auto; font-size: 15px; line-height: 1.6; color: #aaa; margin-bottom: 40px; padding: 0 20px; }
 
-        #contact-section, #trips-section { display: none; padding: 40px 20px; }
+        #contact-section { display: none; padding: 40px 20px; }
 
-        .trip-post { max-width: 800px; margin: 0 auto 80px auto; text-align: left; padding: 0 20px; }
-        .trip-post img { width: 100%; border-radius: 4px; margin-bottom: 20px; cursor: pointer; transition: opacity 0.3s ease; }
-        .trip-post img:hover { opacity: 0.9; }
-        .trip-post h2 { font-size: 24px; margin-bottom: 10px; color: #fff; letter-spacing: 1px; }
-        .trip-post .date { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 15px; display: block; }
-        .trip-post p { font-size: 16px; line-height: 1.8; color: #ccc; }
+        /* OPTIMIERTES MASONRY GITTER FÜR 3 SPALTEN AUF 1080P */
+        .masonry-container { 
+            padding: 20px 8%; 
+            max-width: 1600px; 
+            margin: 0 auto; 
+            column-count: 3; 
+            column-gap: 20px; 
+        }
 
-        .masonry-container { padding: 20px 8%; max-width: 1600px; margin: 0 auto; column-count: 3; column-gap: 20px; }
-        .masonry-item { display: inline-block; width: 100%; margin-bottom: 20px; break-inside: avoid; cursor: pointer; border-radius: 4px; overflow: hidden; background: #222; }
-        .masonry-item img { width: 100%; display: block; transition: transform 0.4s ease; }
+        .masonry-item { 
+            display: inline-block; 
+            width: 100%; 
+            margin-bottom: 20px; 
+            break-inside: avoid; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            background: #222; 
+        }
+
+        .masonry-item img { 
+            width: 100%; 
+            display: block; 
+            height: auto; 
+            transition: transform 0.4s ease; 
+        }
         .masonry-item img:hover { transform: scale(1.05); }
 
+        /* Buttons Styling */
         .btn-container { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px; }
         .social-btn {
             text-decoration: none; color: #fff; display: inline-flex; align-items: center; gap: 10px; 
@@ -56,18 +77,28 @@
         }
         .social-btn:hover { background-color: #fff; color: #000; }
 
+        /* LIGHTBOX */
         #lightbox {
             position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden; transition: all 0.4s ease-in-out; cursor: pointer; touch-action: none;
+            background-color: rgba(0,0,0,0.95);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: all 0.4s ease-in-out; cursor: zoom-out;
         }
         #lightbox.active { opacity: 1; visibility: visible; }
-        #lightbox img { max-width: 90%; max-height: 90%; transform: scale(0.8); transition: transform 0.4s ease, opacity 0.3s ease; user-select: none; }
+        #lightbox img { max-width: 90%; max-height: 90%; transform: scale(0.8); transition: transform 0.4s ease; }
         #lightbox.active img { transform: scale(1); }
 
-        @media (max-width: 1200px) { .masonry-container { column-count: 3; padding: 20px 4%; } }
-        @media (max-width: 900px) { .masonry-container { column-count: 2; padding: 20px 5%; } }
-        @media (max-width: 600px) { .masonry-container { column-count: 1; padding: 10px 20px; } header { padding: 40px 10px; } }
+        /* RESPONSIVE ANPASSUNGEN */
+        @media (max-width: 1200px) { 
+            .masonry-container { column-count: 3; padding: 20px 4%; } 
+        }
+        @media (max-width: 900px) { 
+            .masonry-container { column-count: 2; padding: 20px 5%; } 
+        }
+        @media (max-width: 600px) { 
+            .masonry-container { column-count: 1; padding: 10px 20px; } 
+            header { padding: 40px 10px; }
+        }
     </style>
 </head>
 <body>
@@ -81,7 +112,6 @@
     
     <nav>
         <a id="nav-overview" onclick="showSection('gallery-section')">Overview</a>
-        <a id="nav-trips" onclick="showSection('trips-section')">Trips</a>
         <a id="nav-contact" onclick="showSection('contact-section')">Contact</a>
     </nav>
 
@@ -90,43 +120,36 @@
         <div class="masonry-container" id="gallery"></div>
     </div>
 
-    <div id="trips-section">
-        <div class="trip-post">
-            <span class="date">März 2026</span>
-            <h2 class="trip-title">Abenteuer in den Alpen</h2>
-            <img src="reisefoto1.jpg" alt="Alpen" onclick="openLightboxManual(this.src)">
-            <p class="trip-desc">Schreib hier deinen Text für die erste Reise...</p>
-        </div>
-    </div>
-
     <div id="contact-section">
         <h1 id="contact-title">Kontakt</h1>
         <div class="btn-container">
             <a href="https://www.instagram.com/dpv0112/" target="_blank" class="social-btn">Instagram</a>
             <a href="https://www.linkedin.com/in/david-vorwerk-b04119305" target="_blank" class="social-btn">LinkedIn</a>
         </div>
+
         <div style="margin-top: 60px; opacity: 0.4; font-size: 12px; letter-spacing: 1px;">
             <p>E-Mail: <strong style="color: #aaa;">dpv01@proton.me</strong></p>
             <p style="text-transform: uppercase; margin-top: 20px;">&copy; 2026 David Vorwerk</p>
-            <p id="rights-text" style="font-style: italic; font-size: 10px; margin-top: 5px;">All rights reserved.</p>
+            <p id="rights-text" style="font-style: italic; font-size: 10px; margin-top: 5px;">All rights reserved. Images may not be used without permission.</p>
         </div>
     </div>
 </header>
 
 <script>
+    // AUTOMATISCHE SPRACHERKENNUNG
     const userLang = navigator.language || navigator.userLanguage;
     const isGerman = userLang.startsWith('de');
+
     if (!isGerman) {
         document.getElementById('nav-overview').innerText = 'Overview';
-        document.getElementById('nav-trips').innerText = 'Trips';
         document.getElementById('nav-contact').innerText = 'Contact';
-        document.getElementById('bio-text').innerText = "Hi, I'm David...";
+        document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for animals, nature and travel adventures.";
         document.getElementById('contact-title').innerText = 'Contact';
+        document.getElementById('rights-text').innerText = 'All rights reserved. Images may not be used without permission.';
     }
 
     function showSection(id) {
         document.getElementById('gallery-section').style.display = 'none';
-        document.getElementById('trips-section').style.display = 'none';
         document.getElementById('contact-section').style.display = 'none';
         document.getElementById(id).style.display = 'block';
         window.scrollTo(0,0);
@@ -134,48 +157,35 @@
 
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    let currentImages = [];
-    let currentIndex = 0;
-
-    function openLightbox(index) { currentIndex = index; updateLightboxImage(); lightbox.classList.add('active'); }
-    function openLightboxManual(src) { lightboxImg.src = src; lightbox.classList.add('active'); currentImages = [src]; currentIndex = 0; }
+    function openLightbox(src) { lightboxImg.src = src; lightbox.classList.add('active'); }
     function closeLightbox() { lightbox.classList.remove('active'); }
-    function updateLightboxImage() {
-        lightboxImg.style.opacity = '0';
-        setTimeout(() => { lightboxImg.src = currentImages[currentIndex]; lightboxImg.style.opacity = '1'; }, 150);
-    }
-    function nextImage() { if(currentImages.length > 1) { currentIndex = (currentIndex + 1) % currentImages.length; updateLightboxImage(); } }
-    function prevImage() { if(currentImages.length > 1) { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateLightboxImage(); } }
-
-    let touchStartX = 0; let touchEndX = 0;
-    lightbox.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, false);
-    lightbox.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }, false);
-    function handleSwipe() { if (touchEndX < touchStartX - 50) nextImage(); if (touchEndX > touchStartX + 50) prevImage(); }
-    document.addEventListener('keydown', e => {
-        if (!lightbox.classList.contains('active')) return;
-        if (e.key === "ArrowRight") nextImage();
-        if (e.key === "ArrowLeft") prevImage();
-        if (e.key === "Escape") closeLightbox();
-    });
 
     const gallery = document.getElementById('gallery');
-    const maxBilder = 30; 
-    for (let i = maxBilder; i >= 1; i--) { tryLoad(i, 0); }
-    function tryLoad(id, extIndex) {
-        const exts = ['.jpg', '.JPG'];
-        if (extIndex >= exts.length) return;
+    const maxBilder = 30; // Erhöhe diese Zahl, wenn du mehr Fotos hochlädst!
+
+    for (let i = maxBilder; i >= 1; i--) {
         let img = new Image();
-        img.src = 'foto' + id + exts[extIndex];
-        img.onload = function() {
-            currentImages.push(img.src);
-            let div = document.createElement('div');
-            div.className = 'masonry-item';
-            div.onclick = (e) => { e.stopPropagation(); openLightbox(currentImages.indexOf(img.src)); };
-            div.appendChild(img);
-            gallery.appendChild(div);
+        img.src = 'foto' + i + '.jpg'; 
+        img.loading = "lazy";
+        
+        img.onload = function() { createItem(img); };
+        
+        // Fallback für .JPG Endung
+        img.onerror = function() {
+            let imgRetry = new Image();
+            imgRetry.src = 'foto' + i + '.JPG';
+            imgRetry.onload = function() { createItem(imgRetry); };
         };
-        img.onerror = () => tryLoad(id, extIndex + 1);
+    }
+
+    function createItem(imageElement) {
+        let div = document.createElement('div');
+        div.className = 'masonry-item';
+        div.onclick = function() { openLightbox(imageElement.src); };
+        div.appendChild(imageElement);
+        gallery.appendChild(div);
     }
 </script>
+
 </body>
 </html>
