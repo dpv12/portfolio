@@ -83,15 +83,20 @@
             background-color: rgba(0,0,0,0.95);
             display: flex; align-items: center; justify-content: center;
             opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out; cursor: pointer;
-            touch-action: none; /* Verhindert das Scrollen beim Wischen auf dem Handy */
+            touch-action: none; /* Blockiert Standard-Browser-Zoom, damit unserer sauber läuft */
         }
         #lightbox.active { opacity: 1; visibility: visible; }
         #lightbox img { 
             max-width: 90%; max-height: 90%; 
-            transform: scale(0.8); transition: transform 0.3s ease, opacity 0.2s ease; 
+            transform: scale(0.8); 
+            transition: transform 0.3s ease, opacity 0.2s ease; 
             user-select: none;
+            transform-origin: center center;
         }
         #lightbox.active img { transform: scale(1); }
+        
+        /* Diese Klasse schaltet die Animation beim Zoomen ab, damit das Bild exakt am Finger klebt */
+        #lightbox img.no-transition { transition: opacity 0.2s ease; }
 
         /* RESPONSIVE ANPASSUNGEN */
         @media (max-width: 1200px) { .masonry-container { column-count: 3; padding: 20px 4%; } }
@@ -104,7 +109,7 @@
 </head>
 <body>
 
-<div id="lightbox" onclick="closeLightbox()">
+<div id="lightbox" onclick="closeLightbox(event)">
     <img id="lightbox-img" src="" alt="Zoom" onclick="event.stopPropagation()">
 </div>
 
@@ -117,7 +122,7 @@
     </nav>
 
     <div id="gallery-section">
-        <p id="bio-text" class="bio">Hi, ich bin David, ein Hobbyfotograf mit Leidenschaft für Tiere, die Natur und Reiseabenteuer.</p>
+        <p id="bio-text" class="bio">Hi, ich bin David, ein Hobbyfotograf mit Leidenschaft für Tiere, Natur und Reiseabenteuer.</p>
         <div class="masonry-container" id="gallery"></div>
     </div>
 
@@ -137,7 +142,7 @@
 </header>
 
 <script>
-    // 1. SICHERE SPRACHERKENNUNG (Stürzt nicht ab, wenn der Browser es blockiert)
+    // 1. SICHERE SPRACHERKENNUNG
     try {
         const userLang = navigator.language || navigator.userLanguage || "en";
         if (!userLang.startsWith('de')) {
@@ -147,9 +152,7 @@
             document.getElementById('contact-title').innerText = 'Contact';
             document.getElementById('rights-text').innerText = 'All rights reserved. Images may not be used without permission.';
         }
-    } catch (e) {
-        // Falls der Browser die Sprache blockiert, passiert einfach nichts (Fallback auf Deutsch)
-    }
+    } catch (e) {}
 
     // 2. NAVIGATION
     function showSection(id) {
@@ -162,10 +165,15 @@
     // 3. VARIABLEN FÜR SWIPE & ZOOM
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
-    let currentImages = []; // Hier speichern wir die Reihenfolge der geladenen Bilder
+    let currentImages = []; 
     let currentIndex = 0;
+    
+    // Zoom Variablen
+    let isZooming = false;
+    let initialDistance = 0;
+    let currentScale = 1;
 
-    // 4. BILDER LADEN (Exakt deine sichere Variante)
+    // 4. BILDER LADEN
     const gallery = document.getElementById('gallery');
     const maxBilder = 30; 
 
@@ -184,9 +192,7 @@
     }
 
     function createItem(imageElement) {
-        // Fügt das erfolgreich geladene Bild unserer Swipe-Liste hinzu
         currentImages.push(imageElement.src);
-
         let div = document.createElement('div');
         div.className = 'masonry-item';
         div.onclick = function() { openLightbox(imageElement.src); };
@@ -194,24 +200,32 @@
         gallery.appendChild(div);
     }
 
-    // 5. LIGHTBOX & SWIPE LOGIK
+    // 5. LIGHTBOX & BILDWECHSEL LOGIK
     function openLightbox(src) {
         currentIndex = currentImages.indexOf(src);
-        if(currentIndex === -1) currentIndex = 0; // Sicherheit
+        if(currentIndex === -1) currentIndex = 0; 
         
         lightboxImg.src = currentImages[currentIndex];
         lightbox.classList.add('active');
+        
+        // Reset Zoom
+        currentScale = 1;
+        lightboxImg.style.transform = `scale(1)`;
     }
 
-    function closeLightbox() {
+    function closeLightbox(event) {
+        if (event && event.target !== lightbox) return;
         lightbox.classList.remove('active');
     }
 
     function updateImage() {
-        lightboxImg.style.opacity = '0'; // Kurzes Ausblenden
+        lightboxImg.style.opacity = '0'; 
+        currentScale = 1; // Zoom beim Blättern zurücksetzen
+        lightboxImg.style.transform = `scale(1)`; 
+        
         setTimeout(() => {
             lightboxImg.src = currentImages[currentIndex];
-            lightboxImg.style.opacity = '1'; // Neues Bild einblenden
+            lightboxImg.style.opacity = '1'; 
         }, 150);
     }
 
@@ -227,24 +241,71 @@
         updateImage();
     }
 
-    // Handysteuerung (Wischen)
+    // 6. SWIPE & PINCH-TO-ZOOM LOGIK (FÜR HANDYS)
     let touchStartX = 0;
+
     lightbox.addEventListener('touchstart', function(e) {
-        touchStartX = e.changedTouches[0].screenX;
-    }, {passive: true});
+        if (e.touches.length === 2) {
+            // Zwei Finger: Zoom-Modus startet
+            isZooming = true;
+            lightboxImg.classList.add('no-transition'); // Bild klebt sofort am Finger
+            
+            // Berechnet den Abstand zwischen beiden Fingern
+            initialDistance = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        } else if (e.touches.length === 1 && !isZooming) {
+            // Ein Finger: Wischen vorbereiten
+            touchStartX = e.touches[0].screenX;
+        }
+    }, {passive: false});
+
+    lightbox.addEventListener('touchmove', function(e) {
+        if (isZooming && e.touches.length === 2) {
+            e.preventDefault(); // Verhindert, dass die ganze Webseite scrollt
+            
+            // Berechnet den neuen Abstand der Finger
+            let currentDistance = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            
+            // Skaliert das Bild basierend auf der Fingerbewegung (Maximal 4-fach Zoom)
+            currentScale = currentDistance / initialDistance;
+            if (currentScale < 1) currentScale = 1; 
+            if (currentScale > 4) currentScale = 4;
+            
+            lightboxImg.style.transform = `scale(${currentScale})`;
+        }
+    }, {passive: false});
 
     lightbox.addEventListener('touchend', function(e) {
-        let touchEndX = e.changedTouches[0].screenX;
-        if (touchEndX < touchStartX - 40) nextImage(); // nach links
-        if (touchEndX > touchStartX + 40) prevImage(); // nach rechts
-    }, {passive: true});
+        if (isZooming && e.touches.length === 0) {
+            // Finger losgelassen nach dem Zoomen: Bild "schnappt" weich zurück
+            isZooming = false;
+            currentScale = 1;
+            lightboxImg.classList.remove('no-transition'); // Animation wieder an
+            lightboxImg.style.transform = `scale(1)`;
+            return; // Kein Wischen auslösen!
+        }
 
-    // Tastatursteuerung (Pfeiltasten am PC)
+        if (!isZooming && e.changedTouches.length === 1) {
+            // Normales Wischen (1 Finger)
+            let touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX - 40) nextImage(); // Links -> Vor
+            if (touchEndX > touchStartX + 40) prevImage(); // Rechts -> Zurück
+        }
+    }, {passive: false});
+
+    // 7. TASTATUR LOGIK (FÜR PC)
     document.addEventListener('keydown', function(e) {
         if (!lightbox.classList.contains('active')) return;
         if (e.key === "ArrowRight") nextImage();
         if (e.key === "ArrowLeft") prevImage();
-        if (e.key === "Escape") closeLightbox();
+        if (e.key === "Escape") {
+            lightbox.classList.remove('active'); 
+        }
     });
 
 </script>
