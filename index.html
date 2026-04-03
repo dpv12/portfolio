@@ -238,13 +238,25 @@
             startDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             startScale = currentScale;
 
-            if (currentScale === 1) {
-                let rect = lightboxImg.getBoundingClientRect();
-                let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-                let originX = (midX / rect.width) * 100;
-                let originY = (midY / rect.height) * 100;
+            // BUGFIX: Zielsicherer Zoom - unbeeindruckt von laufenden CSS-Animationen
+            if (currentScale <= 1.05) {
+                currentScale = 1; panX = 0; panY = 0;
+                
+                let imgW = lightboxImg.offsetWidth;
+                let imgH = lightboxImg.offsetHeight;
+                
+                // Berechnet die echte, feste Position des Bildes auf dem Bildschirm
+                let imgL = (window.innerWidth - imgW) / 2;
+                let imgT = (window.innerHeight - imgH) / 2;
+
+                let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                let originX = ((midX - imgL) / imgW) * 100;
+                let originY = ((midY - imgT) / imgH) * 100;
+                
                 lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
+                applyTransform();
             }
 
         } else if (e.touches.length === 1) {
@@ -282,7 +294,7 @@
             return;
         }
 
-        let wasZoomedOrPanned = isZooming || isPanning || currentScale > 1;
+        let wasZoomedOrPanned = isZooming || isPanning || currentScale > 1.05;
 
         if (e.touches.length === 0) {
             resetZoom();
