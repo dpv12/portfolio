@@ -44,19 +44,21 @@
         .trip-post .date { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 15px; display: block; }
         .trip-post p { font-size: 16px; line-height: 1.8; color: #ccc; }
 
-        /* MASONRY GITTER (Overview) - ERZWUNGENE 3 SPALTEN */
+        /* MASONRY GITTER (Overview) */
         .masonry-container { 
-            padding: 20px 3%; /* Rand reduziert für maximale Breite */
-            max-width: 1800px; /* Erlaubt dem Gitter, sich weiter auszudehnen */
+            width: 100%;
+            padding: 0 4%; 
+            box-sizing: border-box;
+            max-width: 1600px; 
             margin: 0 auto; 
             column-count: 3; 
-            column-gap: 15px; /* Abstand zwischen Bildern leicht verringert */
+            column-gap: 20px; 
         }
 
         .masonry-item { 
             display: inline-block; 
             width: 100%; 
-            margin-bottom: 15px; 
+            margin-bottom: 20px; 
             break-inside: avoid; 
             cursor: pointer; 
             border-radius: 4px; 
@@ -84,21 +86,23 @@
         #lightbox.active { opacity: 1; visibility: visible; }
         #lightbox img { 
             max-width: 90%; max-height: 90%; 
-            transform: scale(0.8); transition: transform 0.3s ease, opacity 0.2s ease; 
+            transform: scale(1) translate(0px, 0px); 
+            transition: transform 0.3s ease, opacity 0.2s ease; 
             user-select: none; transform-origin: center center;
         }
         #lightbox.active img { transform: scale(1); }
+        /* Blockiert Animationen während dem Finger-Ziehen für Echtzeit-Reaktion */
         #lightbox img.no-transition { transition: opacity 0.2s ease; }
 
-        /* NEUE UMBRUCH-PUNKTE: Bleibt viel länger auf 3 Spalten */
-        @media (max-width: 850px) { .masonry-container { column-count: 2; padding: 20px 4%; } }
+        @media (max-width: 1100px) { .masonry-container { column-count: 3; padding: 20px 4%; } }
+        @media (max-width: 850px) { .masonry-container { column-count: 2; padding: 20px 5%; } }
         @media (max-width: 550px) { .masonry-container { column-count: 1; padding: 10px 15px; } header { padding: 40px 10px; } }
     </style>
 </head>
 <body>
 
 <div id="lightbox" onclick="closeLightbox()">
-    <img id="lightbox-img" src="" alt="Zoom">
+    <img id="lightbox-img" src="" alt="Zoom" onclick="event.stopPropagation()">
 </div>
 
 <header>
@@ -142,7 +146,7 @@
 
     function showSection(id) {
         document.getElementById('gallery-section').style.display = 'none';
-        document.getElementById('trips-section') ? document.getElementById('trips-section').style.display = 'none' : null;
+        if(document.getElementById('trips-section')) document.getElementById('trips-section').style.display = 'none';
         document.getElementById('contact-section').style.display = 'none';
         document.getElementById(id).style.display = 'block';
         window.scrollTo(0,0);
@@ -152,9 +156,16 @@
     const lightboxImg = document.getElementById('lightbox-img');
     let currentImages = [];
     let currentIndex = 0;
+    
+    // Zoom & Pan Variablen
     let isZooming = false;
-    let initialDistance = 0;
+    let isPanning = false;
     let currentScale = 1;
+    let startDistance = 0;
+    let startScale = 1;
+    let panX = 0, panY = 0;
+    let lastTouchX = 0, lastTouchY = 0;
+    let touchStartX = 0;
 
     function openLightbox(src) {
         currentIndex = currentImages.indexOf(src);
@@ -172,8 +183,22 @@
         resetZoom();
     }
 
-    function closeLightbox() { lightbox.classList.remove('active'); resetZoom(); }
-    function resetZoom() { currentScale = 1; lightboxImg.style.transform = `scale(1)`; lightboxImg.style.transformOrigin = 'center center'; }
+    function closeLightbox() { 
+        lightbox.classList.remove('active'); 
+        resetZoom(); 
+    }
+
+    function applyTransform() {
+        lightboxImg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
+    }
+
+    function resetZoom() {
+        currentScale = 1; panX = 0; panY = 0;
+        isZooming = false; isPanning = false;
+        lightboxImg.classList.remove('no-transition');
+        applyTransform();
+    }
+
     function updateLightboxImage() {
         lightboxImg.style.opacity = '0'; resetZoom();
         setTimeout(() => { lightboxImg.src = currentImages[currentIndex]; lightboxImg.style.opacity = '1'; }, 150);
@@ -182,20 +207,25 @@
     function nextImage() { if(currentImages.length > 1) { currentIndex = (currentIndex + 1) % currentImages.length; updateLightboxImage(); } }
     function prevImage() { if(currentImages.length > 1) { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateLightboxImage(); } }
 
-    let touchStartX = 0; 
+    // PROFESIONELLE SWIPE, ZOOM & PAN LOGIK
     lightbox.addEventListener('touchstart', e => { 
         if (e.touches.length === 2) {
             isZooming = true;
+            isPanning = false;
             lightboxImg.classList.add('no-transition');
-            initialDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            let rect = lightboxImg.getBoundingClientRect();
-            let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-            let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-            let originX = (midX / rect.width) * 100;
-            let originY = (midY / rect.height) * 100;
-            lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
-        } else if (e.touches.length === 1 && !isZooming) {
-            touchStartX = e.touches[0].screenX; 
+            startDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            startScale = currentScale;
+        } else if (e.touches.length === 1) {
+            if (currentScale > 1) {
+                // Ein Finger, aber Bild ist herangezoomt -> Panning Modus
+                isPanning = true;
+                lightboxImg.classList.add('no-transition');
+                lastTouchX = e.touches[0].pageX;
+                lastTouchY = e.touches[0].pageY;
+            } else {
+                // Normales Wischen vorbereiten
+                touchStartX = e.touches[0].screenX; 
+            }
         }
     }, {passive: false});
 
@@ -203,22 +233,48 @@
         if (isZooming && e.touches.length === 2) {
             e.preventDefault(); 
             let currentDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            currentScale = currentDistance / initialDistance;
+            currentScale = startScale * (currentDistance / startDistance);
             if (currentScale < 1) currentScale = 1; 
-            if (currentScale > 4) currentScale = 4;
-            lightboxImg.style.transform = `scale(${currentScale})`;
+            if (currentScale > 5) currentScale = 5; // Maximaler Zoom x5
+            applyTransform();
+        } else if (isPanning && e.touches.length === 1) {
+            e.preventDefault();
+            // Berechne die Fingerbewegung
+            let deltaX = e.touches[0].pageX - lastTouchX;
+            let deltaY = e.touches[0].pageY - lastTouchY;
+            panX += deltaX;
+            panY += deltaY;
+            lastTouchX = e.touches[0].pageX;
+            lastTouchY = e.touches[0].pageY;
+            applyTransform();
         }
     }, {passive: false});
 
     lightbox.addEventListener('touchend', e => { 
-        if (isZooming && e.touches.length === 0) {
-            isZooming = false; currentScale = 1;
-            lightboxImg.classList.remove('no-transition');
-            lightboxImg.style.transform = `scale(1)`;
-            setTimeout(() => { lightboxImg.style.transformOrigin = 'center center'; }, 300);
+        if (e.touches.length === 1 && isZooming) {
+            // Übergang von 2 auf 1 Finger: Zoom stoppt, Panning startet nahtlos
+            isZooming = false;
+            if (currentScale > 1) {
+                isPanning = true;
+                lastTouchX = e.touches[0].pageX;
+                lastTouchY = e.touches[0].pageY;
+            }
             return;
         }
-        if (!isZooming && e.changedTouches.length === 1) {
+
+        if (e.touches.length === 0) {
+            isZooming = false;
+            isPanning = false;
+            if (currentScale <= 1) {
+                resetZoom();
+            } else {
+                // Bild bleibt gezoomt und gepannt stehen, aber weiche Animation wird wieder aktiviert
+                lightboxImg.classList.remove('no-transition');
+            }
+        }
+
+        if (currentScale === 1 && !isZooming && !isPanning && e.changedTouches.length === 1) {
+            // Normales Blättern
             let touchEndX = e.changedTouches[0].screenX; 
             if (touchEndX < touchStartX - 40) nextImage();
             if (touchEndX > touchStartX + 40) prevImage();
