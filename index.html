@@ -29,7 +29,14 @@
         }
         
         header { padding: 60px 20px 20px 20px; }
-        .profile-pic { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 20px; border: 1px solid #333; }
+        
+        .profile-pic { 
+            width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 20px; border: 1px solid #333; 
+            /* KOPIERSCHUTZ PROFILBILD */
+            pointer-events: none; 
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+        }
         
         nav { margin-bottom: 30px; }
         nav a { 
@@ -81,8 +88,8 @@
             background-color: #333; 
 
             /* KOPIERSCHUTZ GALERIE */
-            pointer-events: none; /* Blockiert Klicks auf das Bild direkt (Klick geht an den Container) */
-            -webkit-touch-callout: none; /* Blockiert "Bild Speichern" Menü am iPhone */
+            pointer-events: none; 
+            -webkit-touch-callout: none; 
         }
         .masonry-item img:hover { transform: scale(1.05); }
 
@@ -103,7 +110,7 @@
             cursor: zoom-out; 
 
             /* KOPIERSCHUTZ LIGHTBOX */
-            pointer-events: none; /* Verhindert langes Drücken am Handy */
+            pointer-events: none; 
             -webkit-touch-callout: none;
         }
         #lightbox.active img { transform: scale(1); }
@@ -115,7 +122,6 @@
             text-decoration: none; color: #fff; display: inline-flex; align-items: center; gap: 10px; 
             border: 1px solid #444; padding: 12px 25px; border-radius: 50px; font-weight: bold; 
             transition: all 0.3s ease; width: 220px; justify-content: center; background: rgba(255,255,255,0.05);
-            /* Buttons müssen klickbar bleiben: */
             pointer-events: auto; 
         }
         .social-btn:hover { background-color: #fff; color: #000; }
@@ -133,7 +139,7 @@
 </div>
 
 <header>
-    <img src="profil.jpg" alt="Profil" class="profile-pic">
+    <img src="profil.jpg" alt="Profil" class="profile-pic" draggable="false">
     
     <nav>
         <a id="nav-overview" onclick="showSection('gallery-section')">Overview</a>
@@ -232,8 +238,6 @@
             startDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             startScale = currentScale;
 
-            // BUGFIX: Setzt den Zoom-Fokus nur neu, wenn das Bild noch nicht verschoben wurde.
-            // Sonst kollidiert die Positionierung mit dem bereits verschobenen Bild und es springt!
             if (currentScale === 1) {
                 let rect = lightboxImg.getBoundingClientRect();
                 let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
@@ -298,7 +302,6 @@
         if (e.key === "Escape") closeLightbox();
     });
 
-    // DYNAMISCHE GITHUB-API LADE-LOGIK
     const gallery = document.getElementById('gallery');
     const cols = [];
     const numCols = 3;
