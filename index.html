@@ -239,8 +239,24 @@
     }, {passive: false});
 
     lightbox.addEventListener('touchend', e => { 
-        if (e.touches.length === 0) resetZoom();
-        if (currentScale === 1 && e.changedTouches.length === 1) {
+        // WICHTIG: Hier ist der fehlende Block, der das Loslassen eines Fingers erkennt
+        if (e.touches.length === 1 && isZooming) {
+            isZooming = false;
+            if (currentScale > 1) {
+                isPanning = true;
+                lastTouchX = e.touches[0].pageX;
+                lastTouchY = e.touches[0].pageY;
+            }
+            return;
+        }
+
+        let wasZoomedOrPanned = isZooming || isPanning || currentScale > 1;
+
+        if (e.touches.length === 0) {
+            resetZoom();
+        }
+
+        if (!wasZoomedOrPanned && e.changedTouches.length === 1) {
             let touchEndX = e.changedTouches[0].screenX; 
             if (touchEndX < touchStartX - 40) nextImage();
             else if (touchEndX > touchStartX + 40) prevImage();
