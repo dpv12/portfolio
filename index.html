@@ -36,15 +36,7 @@
 
         #contact-section, #trips-section { display: none; padding: 40px 20px; }
 
-        /* TRIPS BLOG STYLING */
-        .trip-post { max-width: 800px; margin: 0 auto 80px auto; text-align: left; padding: 0 20px; }
-        .trip-post img { width: 100%; border-radius: 4px; margin-bottom: 20px; cursor: pointer; transition: opacity 0.3s ease; }
-        .trip-post img:hover { opacity: 0.9; }
-        .trip-post h2 { font-size: 24px; margin-bottom: 10px; color: #fff; letter-spacing: 1px; }
-        .trip-post .date { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 15px; display: block; }
-        .trip-post p { font-size: 16px; line-height: 1.8; color: #ccc; }
-
-        /* MASONRY GITTER (Erzwingt feste Spalten) */
+        /* MASONRY GITTER */
         .masonry-container { 
             display: flex;
             flex-direction: row;
@@ -67,8 +59,8 @@
             border-radius: 4px; 
             overflow: hidden; 
             background: #222; 
-            /* Weiches Einblenden für den "Wasserfall"-Effekt */
-            animation: fadeIn 0.5s ease-in-out;
+            animation: fadeIn 0.6s ease-out forwards;
+            opacity: 0;
         }
 
         @keyframes fadeIn {
@@ -83,15 +75,6 @@
             background-color: #333; 
         }
         .masonry-item img:hover { transform: scale(1.05); }
-
-        /* Buttons & Socials */
-        .btn-container { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px; }
-        .social-btn {
-            text-decoration: none; color: #fff; display: inline-flex; align-items: center; gap: 10px; 
-            border: 1px solid #444; padding: 12px 25px; border-radius: 50px; font-weight: bold; 
-            transition: all 0.3s ease; width: 220px; justify-content: center; background: rgba(255,255,255,0.05);
-        }
-        .social-btn:hover { background-color: #fff; color: #000; }
 
         /* LIGHTBOX */
         #lightbox {
@@ -111,6 +94,15 @@
         }
         #lightbox.active img { transform: scale(1); }
         #lightbox img.no-transition { transition: opacity 0.2s ease; }
+
+        /* Buttons & Socials */
+        .btn-container { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px; }
+        .social-btn {
+            text-decoration: none; color: #fff; display: inline-flex; align-items: center; gap: 10px; 
+            border: 1px solid #444; padding: 12px 25px; border-radius: 50px; font-weight: bold; 
+            transition: all 0.3s ease; width: 220px; justify-content: center; background: rgba(255,255,255,0.05);
+        }
+        .social-btn:hover { background-color: #fff; color: #000; }
 
         @media (max-width: 850px) { 
             .masonry-container { flex-direction: column; padding: 20px 5%; } 
@@ -165,7 +157,6 @@
 
     function showSection(id) {
         document.getElementById('gallery-section').style.display = 'none';
-        if(document.getElementById('trips-section')) document.getElementById('trips-section').style.display = 'none';
         document.getElementById('contact-section').style.display = 'none';
         document.getElementById(id).style.display = 'block';
         window.scrollTo(0,0);
@@ -176,7 +167,6 @@
     let currentImages = [];
     let currentIndex = 0;
     
-    // Zoom & Pan Variablen
     let isZooming = false;
     let isPanning = false;
     let currentScale = 1;
@@ -215,37 +205,20 @@
         setTimeout(() => { lightboxImg.src = currentImages[currentIndex]; lightboxImg.style.opacity = '1'; }, 150);
     }
 
-    function nextImage() { 
-        if(currentImages.length > 1) { 
-            currentIndex = (currentIndex + 1) % currentImages.length; 
-            updateLightboxImage(); 
-        } 
-    }
-    
-    function prevImage() { 
-        if(currentImages.length > 1) { 
-            currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; 
-            updateLightboxImage(); 
-        } 
-    }
+    function nextImage() { if(currentImages.length > 1) { currentIndex = (currentIndex + 1) % currentImages.length; updateLightboxImage(); } }
+    function prevImage() { if(currentImages.length > 1) { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateLightboxImage(); } }
 
-    // Touch-Steuerung für Handys
     lightbox.addEventListener('touchstart', e => { 
         if (e.touches.length === 2) {
-            isZooming = true;
-            isPanning = false;
+            isZooming = true; isPanning = false;
             lightboxImg.classList.add('no-transition');
             startDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             startScale = currentScale;
         } else if (e.touches.length === 1) {
             if (currentScale > 1) {
-                isPanning = true;
-                lightboxImg.classList.add('no-transition');
-                lastTouchX = e.touches[0].pageX;
-                lastTouchY = e.touches[0].pageY;
-            } else {
-                touchStartX = e.touches[0].screenX; 
-            }
+                isPanning = true; lightboxImg.classList.add('no-transition');
+                lastTouchX = e.touches[0].pageX; lastTouchY = e.touches[0].pageY;
+            } else { touchStartX = e.touches[0].screenX; }
         }
     }, {passive: false});
 
@@ -254,46 +227,26 @@
             e.preventDefault(); 
             let currentDistance = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             currentScale = startScale * (currentDistance / startDistance);
-            if (currentScale < 1) currentScale = 1; 
-            if (currentScale > 5) currentScale = 5; 
+            if (currentScale < 1) currentScale = 1; if (currentScale > 5) currentScale = 5; 
             applyTransform();
         } else if (isPanning && e.touches.length === 1) {
             e.preventDefault();
-            let deltaX = e.touches[0].pageX - lastTouchX;
-            let deltaY = e.touches[0].pageY - lastTouchY;
-            panX += deltaX;
-            panY += deltaY;
-            lastTouchX = e.touches[0].pageX;
-            lastTouchY = e.touches[0].pageY;
+            let deltaX = e.touches[0].pageX - lastTouchX; let deltaY = e.touches[0].pageY - lastTouchY;
+            panX += deltaX; panY += deltaY;
+            lastTouchX = e.touches[0].pageX; lastTouchY = e.touches[0].pageY;
             applyTransform();
         }
     }, {passive: false});
 
     lightbox.addEventListener('touchend', e => { 
-        if (e.touches.length === 1 && isZooming) {
-            isZooming = false;
-            if (currentScale > 1) {
-                isPanning = true;
-                lastTouchX = e.touches[0].pageX;
-                lastTouchY = e.touches[0].pageY;
-            }
-            return;
-        }
-
-        let wasZoomedOrPanned = isZooming || isPanning || currentScale > 1;
-
-        if (e.touches.length === 0) {
-            resetZoom();
-        }
-
-        if (!wasZoomedOrPanned && e.changedTouches.length === 1) {
+        if (e.touches.length === 0) resetZoom();
+        if (currentScale === 1 && e.changedTouches.length === 1) {
             let touchEndX = e.changedTouches[0].screenX; 
             if (touchEndX < touchStartX - 40) nextImage();
             else if (touchEndX > touchStartX + 40) prevImage();
         }
     }, {passive: false});
 
-    // Tastatursteuerung
     document.addEventListener('keydown', e => {
         if (!lightbox.classList.contains('active')) return;
         if (e.key === "ArrowRight") nextImage();
@@ -301,7 +254,7 @@
         if (e.key === "Escape") closeLightbox();
     });
 
-    // NEUE SEQUENTIELLE LADE-LOGIK (WebP -> jpg -> JPG Kettenreaktion)
+    // PARALLELE LADE-LOGIK (Wasserfall-Bremse gelöst)
     const gallery = document.getElementById('gallery');
     const cols = [];
     const numCols = 3;
@@ -315,61 +268,46 @@
 
     let currentCol = 0;
     const maxBilder = 30; 
-    let currentLoadId = maxBilder;
 
-    function loadNextImage() {
-        if (currentLoadId < 1) return; // Wenn alle Zahlen durch sind, aufhören
-
-        let id = currentLoadId;
-        currentLoadId--;
-
-        // Diese Formate werden nacheinander getestet
-        let extensions = ['.webp', '.jpg', '.JPG'];
-        let extIndex = 0;
+    // Wir laden die Bilder jetzt parallel
+    for (let i = maxBilder; i >= 1; i--) {
+        const id = i;
+        const div = document.createElement('div');
+        div.className = 'masonry-item';
+        
+        const imgElement = document.createElement('img');
+        imgElement.loading = "lazy";
+        
+        const extensions = ['.webp', '.jpg', '.JPG'];
+        let extIdx = 0;
 
         function tryLoad() {
-            if (extIndex >= extensions.length) {
-                // Wenn keins der Formate existiert, einfach mit dem nächsten Bild-Code weiter machen
-                loadNextImage();
+            if (extIdx >= extensions.length) {
+                div.remove(); 
                 return;
             }
-
-            let img = new Image();
-
-            img.onload = function() {
-                // Erst wenn das Bild da ist, wird es im HTML gebaut
-                currentImages.push(img.src);
-                
-                let div = document.createElement('div');
-                div.className = 'masonry-item';
-                
-                let displayImg = document.createElement('img');
-                displayImg.src = img.src;
-                
-                div.onclick = (e) => { e.stopPropagation(); openLightbox(displayImg.src); };
-                div.appendChild(displayImg);
-                cols[currentCol].appendChild(div);
-                currentCol = (currentCol + 1) % numCols;
-
-                // Nächstes Bild starten
-                loadNextImage();
+            
+            const tempImg = new Image();
+            tempImg.src = 'foto' + id + extensions[extIdx];
+            
+            tempImg.onload = function() {
+                imgElement.src = tempImg.src;
+                currentImages.push(imgElement.src);
+                div.appendChild(imgElement);
             };
-
-            img.onerror = function() {
-                // WebP ging nicht? Probiere .jpg. Ging nicht? Probiere .JPG
-                extIndex++;
+            
+            tempImg.onerror = function() {
+                extIdx++;
                 tryLoad();
             };
-
-            // Download starten
-            img.src = 'foto' + id + extensions[extIndex];
         }
 
+        div.onclick = (e) => { e.stopPropagation(); openLightbox(imgElement.src); };
+        cols[currentCol].appendChild(div);
+        currentCol = (currentCol + 1) % numCols;
+        
         tryLoad();
     }
-
-    // Starte die Wasserfall-Ladefunktion
-    loadNextImage();
 </script>
 
 </body>
