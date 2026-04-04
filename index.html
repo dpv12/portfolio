@@ -22,6 +22,11 @@
             user-select: none;
         }
 
+        /* NEU: Verhindert das Scrollen im Hintergrund, wenn die Lightbox offen ist */
+        body.no-scroll {
+            overflow: hidden;
+        }
+
         body::before {
             content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/Noise_600x600.png');
@@ -49,10 +54,10 @@
 
         #contact-section, #trips-section { display: none; padding: 40px 20px; }
 
-        /* NEUES UNIFORMES RASTER (GRID) FÜR DIE GALERIE */
+        /* UNIFORMES RASTER (GRID) FÜR DIE GALERIE */
         .masonry-container { 
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Erzwingt exakt 3 gleich breite Spalten */
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px; 
             padding: 20px 3%; 
             max-width: 1600px; 
@@ -61,7 +66,7 @@
 
         .masonry-item { 
             width: 100%; 
-            aspect-ratio: 1 / 1; /* Macht alle Boxen zu perfekten Quadraten! (Alternativ: 4 / 3) */
+            aspect-ratio: 1 / 1; 
             cursor: pointer; 
             border-radius: 4px; 
             overflow: hidden; 
@@ -78,8 +83,8 @@
 
         .masonry-item img { 
             width: 100%; 
-            height: 100%; /* Zwingt das Bild, die ganze Boxshöhe einzunehmen */
-            object-fit: cover; /* Schneidet die überstehenden Ränder sanft ab, füllt aber alles aus */
+            height: 100%; 
+            object-fit: cover; 
             display: block; 
             transition: transform 0.4s ease;
             background-color: #333; 
@@ -123,7 +128,6 @@
         }
         .social-btn:hover { background-color: #fff; color: #000; }
 
-        /* Responsive Anpassungen für Tablets und Handys */
         @media (max-width: 950px) { 
             .masonry-container { grid-template-columns: repeat(2, 1fr); padding: 20px 4%; } 
         }
@@ -135,7 +139,7 @@
 </head>
 <body oncontextmenu="return false;">
 
-<div id="lightbox" onclick="closeLightbox()">
+<div id="lightbox">
     <img id="lightbox-img" src="" alt="Zoom" draggable="false">
 </div>
 
@@ -200,6 +204,7 @@
     let touchStartX = 0;
 
     function openLightbox(src) {
+        document.body.classList.add('no-scroll'); // Scrollen im Hintergrund blockieren
         currentIndex = currentImages.indexOf(src);
         if(currentIndex === -1) currentIndex = 0; 
         lightboxImg.src = currentImages[currentIndex];
@@ -208,6 +213,7 @@
     }
 
     function closeLightbox() { 
+        document.body.classList.remove('no-scroll'); // Scrollen wieder erlauben
         lightbox.classList.remove('active'); 
         resetZoom(); 
     }
@@ -232,6 +238,7 @@
     function nextImage() { if(currentImages.length > 1) { currentIndex = (currentIndex + 1) % currentImages.length; updateLightboxImage(); } }
     function prevImage() { if(currentImages.length > 1) { currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length; updateLightboxImage(); } }
 
+    /* --- TOUCH LOGIK (FÜR SMARTPHONES) --- */
     lightbox.addEventListener('touchstart', e => { 
         if (e.touches.length === 2) {
             isZooming = true; isPanning = false;
@@ -241,23 +248,17 @@
 
             if (currentScale <= 1.05) {
                 currentScale = 1; panX = 0; panY = 0;
-                
                 let imgW = lightboxImg.offsetWidth;
                 let imgH = lightboxImg.offsetHeight;
-                
                 let imgL = (window.innerWidth - imgW) / 2;
                 let imgT = (window.innerHeight - imgH) / 2;
-
                 let midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 let midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-
                 let originX = ((midX - imgL) / imgW) * 100;
                 let originY = ((midY - imgT) / imgH) * 100;
-                
                 lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
                 applyTransform();
             }
-
         } else if (e.touches.length === 1) {
             if (currentScale > 1) {
                 isPanning = true; lightboxImg.classList.add('no-transition');
@@ -294,10 +295,7 @@
         }
 
         let wasZoomedOrPanned = isZooming || isPanning || currentScale > 1.05;
-
-        if (e.touches.length === 0) {
-            resetZoom();
-        }
+        if (e.touches.length === 0) resetZoom();
 
         if (!wasZoomedOrPanned && e.changedTouches.length === 1) {
             let touchEndX = e.changedTouches[0].screenX; 
@@ -306,6 +304,86 @@
         }
     }, {passive: false});
 
+
+    /* --- NEU: MAUS LOGIK (FÜR DEN PC) --- */
+    let isMouseDown = false;
+    let isMouseDragging = false;
+
+    // Mausrad zum Zoomen
+    lightbox.addEventListener('wheel', (e) => {
+        if (!lightbox.classList.contains('active')) return;
+        e.preventDefault(); // Blockiert das reguläre Scrollen der Seite absolut
+
+        // Zielsicherer Zoom: Fokussiert den Punkt unter der Maus
+        if (currentScale === 1) {
+            if (e.target === lightboxImg) {
+                let rect = lightboxImg.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                let y = e.clientY - rect.top;
+                let originX = (x / rect.width) * 100;
+                let originY = (y / rect.height) * 100;
+                lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
+            } else {
+                lightboxImg.style.transformOrigin = `50% 50%`; // Mittig, wenn Maus daneben ist
+            }
+        }
+
+        let zoomSpeed = 0.15;
+        if (e.deltaY < 0) currentScale += zoomSpeed; // Hoch = rein
+        else currentScale -= zoomSpeed;              // Runter = raus
+
+        if (currentScale < 1) currentScale = 1;
+        if (currentScale > 5) currentScale = 5;
+
+        if (currentScale === 1) {
+            panX = 0; panY = 0;
+            lightboxImg.style.transformOrigin = 'center center';
+        }
+
+        lightboxImg.classList.add('no-transition');
+        applyTransform();
+    }, {passive: false});
+
+    // Pannen (Schieben) mit der Maus
+    lightbox.addEventListener('mousedown', (e) => {
+        isMouseDown = true;
+        isMouseDragging = false;
+        if (currentScale > 1) {
+            e.preventDefault();
+            lightboxImg.classList.add('no-transition');
+            lastTouchX = e.clientX;
+            lastTouchY = e.clientY;
+        }
+    });
+
+    lightbox.addEventListener('mousemove', (e) => {
+        if (isMouseDown) {
+            isMouseDragging = true;
+            if (currentScale > 1) {
+                e.preventDefault();
+                let deltaX = e.clientX - lastTouchX;
+                let deltaY = e.clientY - lastTouchY;
+                panX += deltaX;
+                panY += deltaY;
+                lastTouchX = e.clientX;
+                lastTouchY = e.clientY;
+                applyTransform();
+            }
+        }
+    });
+
+    lightbox.addEventListener('mouseup', () => { isMouseDown = false; });
+    lightbox.addEventListener('mouseleave', () => { isMouseDown = false; });
+
+    // Schließen per Klick (aber nur, wenn wir nicht gerade gezogen haben!)
+    lightbox.addEventListener('click', (e) => {
+        if (!isMouseDragging) {
+            closeLightbox();
+        }
+        isMouseDragging = false;
+    });
+
+    // Tastatur (Pfeile & Escape)
     document.addEventListener('keydown', e => {
         if (!lightbox.classList.contains('active')) return;
         if (e.key === "ArrowRight") nextImage();
@@ -313,7 +391,8 @@
         if (e.key === "Escape") closeLightbox();
     });
 
-    // DYNAMISCHE GITHUB-API LADE-LOGIK (Ohne JS-Spalten, direkt ins CSS-Grid!)
+
+    // DYNAMISCHE GITHUB-API LADE-LOGIK
     const gallery = document.getElementById('gallery');
 
     async function fetchAndLoadImages() {
@@ -354,9 +433,7 @@
             
             div.onclick = (e) => { e.stopPropagation(); openLightbox(imgElement.src); };
             
-            // Bild direkt in die Galerie einfügen (Das CSS Grid ordnet es automatisch an)
             gallery.appendChild(div);
-
             loadDynamicImage(imageArray, index + 1);
         };
         
