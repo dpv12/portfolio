@@ -22,7 +22,7 @@
             user-select: none;
         }
 
-        /* NEU: Verhindert das Scrollen im Hintergrund, wenn die Lightbox offen ist */
+        /* Verhindert das Scrollen im Hintergrund, wenn die Lightbox offen ist */
         body.no-scroll {
             overflow: hidden;
         }
@@ -204,7 +204,7 @@
     let touchStartX = 0;
 
     function openLightbox(src) {
-        document.body.classList.add('no-scroll'); // Scrollen im Hintergrund blockieren
+        document.body.classList.add('no-scroll'); 
         currentIndex = currentImages.indexOf(src);
         if(currentIndex === -1) currentIndex = 0; 
         lightboxImg.src = currentImages[currentIndex];
@@ -213,7 +213,7 @@
     }
 
     function closeLightbox() { 
-        document.body.classList.remove('no-scroll'); // Scrollen wieder erlauben
+        document.body.classList.remove('no-scroll'); 
         lightbox.classList.remove('active'); 
         resetZoom(); 
     }
@@ -304,47 +304,41 @@
         }
     }, {passive: false});
 
-
-    /* --- NEU: MAUS LOGIK (FÜR DEN PC) --- */
+    /* --- PC MAUS LOGIK (Zielsicherer Maus-Zoom) --- */
     let isMouseDown = false;
     let isMouseDragging = false;
 
-    // Mausrad zum Zoomen
     lightbox.addEventListener('wheel', (e) => {
         if (!lightbox.classList.contains('active')) return;
-        e.preventDefault(); // Blockiert das reguläre Scrollen der Seite absolut
-
-        // Zielsicherer Zoom: Fokussiert den Punkt unter der Maus
-        if (currentScale === 1) {
-            if (e.target === lightboxImg) {
-                let rect = lightboxImg.getBoundingClientRect();
-                let x = e.clientX - rect.left;
-                let y = e.clientY - rect.top;
-                let originX = (x / rect.width) * 100;
-                let originY = (y / rect.height) * 100;
-                lightboxImg.style.transformOrigin = `${originX}% ${originY}%`;
-            } else {
-                lightboxImg.style.transformOrigin = `50% 50%`; // Mittig, wenn Maus daneben ist
-            }
-        }
+        e.preventDefault(); 
 
         let zoomSpeed = 0.15;
-        if (e.deltaY < 0) currentScale += zoomSpeed; // Hoch = rein
-        else currentScale -= zoomSpeed;              // Runter = raus
+        let oldScale = currentScale;
+        
+        if (e.deltaY < 0) currentScale += zoomSpeed; 
+        else currentScale -= zoomSpeed;              
 
         if (currentScale < 1) currentScale = 1;
         if (currentScale > 5) currentScale = 5;
 
+        // Magische Formel: Verschiebt das Bild beim Zoomen genau in Richtung der Maus
+        if (currentScale !== oldScale) {
+            let zoomFactor = currentScale / oldScale;
+            let mouseX = e.clientX - (window.innerWidth / 2);
+            let mouseY = e.clientY - (window.innerHeight / 2);
+            
+            panX -= (mouseX - panX) * (zoomFactor - 1);
+            panY -= (mouseY - panY) * (zoomFactor - 1);
+        }
+
         if (currentScale === 1) {
             panX = 0; panY = 0;
-            lightboxImg.style.transformOrigin = 'center center';
         }
 
         lightboxImg.classList.add('no-transition');
         applyTransform();
     }, {passive: false});
 
-    // Pannen (Schieben) mit der Maus
     lightbox.addEventListener('mousedown', (e) => {
         isMouseDown = true;
         isMouseDragging = false;
@@ -375,22 +369,17 @@
     lightbox.addEventListener('mouseup', () => { isMouseDown = false; });
     lightbox.addEventListener('mouseleave', () => { isMouseDown = false; });
 
-    // Schließen per Klick (aber nur, wenn wir nicht gerade gezogen haben!)
     lightbox.addEventListener('click', (e) => {
-        if (!isMouseDragging) {
-            closeLightbox();
-        }
+        if (!isMouseDragging) closeLightbox();
         isMouseDragging = false;
     });
 
-    // Tastatur (Pfeile & Escape)
     document.addEventListener('keydown', e => {
         if (!lightbox.classList.contains('active')) return;
         if (e.key === "ArrowRight") nextImage();
         if (e.key === "ArrowLeft") prevImage();
         if (e.key === "Escape") closeLightbox();
     });
-
 
     // DYNAMISCHE GITHUB-API LADE-LOGIK
     const gallery = document.getElementById('gallery');
