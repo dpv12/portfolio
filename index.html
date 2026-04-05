@@ -96,7 +96,7 @@
         }
         .masonry-item:hover img { transform: scale(1.05); }
 
-        /* MAP STYLING */
+        /* MAP STYLING (Standard für PC) */
         .map-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .map-container iframe { 
             position: absolute; 
@@ -146,6 +146,15 @@
         @media (max-width: 600px) { 
             .masonry-container { grid-template-columns: 1fr; padding: 10px 5%; } 
             header { padding: 40px 10px; }
+            
+            /* NEU: Optimiertes Map-Layout für Handys (Vollbild-Look) */
+            .map-container {
+                padding-bottom: 0; /* Überschreibt das 16:9 Format */
+                height: 80vh; /* Nimmt 80% der Bildschirmhöhe ein */
+                margin-left: -10px; /* Zieht die Karte an den linken Rand */
+                margin-right: -10px; /* Zieht die Karte an den rechten Rand */
+                border-radius: 0; /* Eckige Kanten passen besser zum Vollbild */
+            }
         }
     </style>
 </head>
