@@ -52,8 +52,8 @@
 
         .bio { max-width: 550px; margin: 0 auto; font-size: 15px; line-height: 1.6; color: #aaa; margin-bottom: 40px; padding: 0 20px; }
 
-        /* Container für Kontakt und Map */
-        #contact-section, #map-section { display: none; padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
+        /* Container für Kontakt */
+        #contact-section { display: none; padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
 
         /* UNIFORMES RASTER (GRID) FÜR DIE GALERIE */
         .masonry-container { 
@@ -96,22 +96,11 @@
         }
         .masonry-item:hover img { transform: scale(1.05); }
 
-        /* MAP STYLING (Standard für PC) */
-        .map-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .map-container iframe { 
-            position: absolute; 
-            top: -60px; /* Schiebt die Leiste nach oben aus dem sichtbaren Bereich */
-            left: 0; 
-            width: 100%; 
-            height: calc(100% + 60px); /* Gleicht die verschobene Höhe unten wieder aus */
-            border: 0; 
-        }
-
         /* LIGHTBOX */
         #lightbox {
             position: fixed; z-index: 10000; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out; cursor: zoom-out; touch-action: none;
+            opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out; cursor: default; touch-action: none;
         }
         #lightbox.active { opacity: 1; visibility: visible; }
         #lightbox img { 
@@ -121,7 +110,7 @@
             user-select: none; 
             -webkit-user-drag: none; 
             transform-origin: center center;
-            cursor: zoom-out; 
+            cursor: default; 
 
             /* KOPIERSCHUTZ LIGHTBOX */
             pointer-events: none; 
@@ -146,15 +135,6 @@
         @media (max-width: 600px) { 
             .masonry-container { grid-template-columns: 1fr; padding: 10px 5%; } 
             header { padding: 40px 10px; }
-            
-            /* NEU: Optimiertes Map-Layout für Handys (Vollbild-Look) */
-            .map-container {
-                padding-bottom: 0; /* Überschreibt das 16:9 Format */
-                height: 80vh; /* Nimmt 80% der Bildschirmhöhe ein */
-                margin-left: -10px; /* Zieht die Karte an den linken Rand */
-                margin-right: -10px; /* Zieht die Karte an den rechten Rand */
-                border-radius: 0; /* Eckige Kanten passen besser zum Vollbild */
-            }
         }
     </style>
 </head>
@@ -169,20 +149,12 @@
     
     <nav>
         <a id="nav-overview" onclick="showSection('gallery-section')">Overview</a>
-        <a id="nav-map" onclick="showSection('map-section')">Travel-Log</a>
         <a id="nav-contact" onclick="showSection('contact-section')">Contact</a>
     </nav>
 
     <div id="gallery-section">
         <p id="bio-text" class="bio">Hi, ich bin David, ein Hobbyfotograf mit Leidenschaft für Natur, Tiere und Reiseabenteuer.</p>
         <div class="masonry-container" id="gallery"></div>
-    </div>
-
-    <div id="map-section">
-        <h1 id="map-title" style="margin-bottom: 40px; letter-spacing: 2px;">Travel-Log</h1>
-        <div class="map-container">
-            <iframe src="https://www.google.com/maps/d/embed?mid=1rdjZaqDB5Io6uZy92735Rogj-0Ya8hs&ehbc=2E312F" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
     </div>
 
     <div id="contact-section">
@@ -192,7 +164,7 @@
             <a href="https://www.linkedin.com/in/david-vorwerk-b04119305" target="_blank" class="social-btn">LinkedIn</a>
         </div>
         <div style="margin-top: 60px; opacity: 0.4; font-size: 12px; letter-spacing: 1px;">
-            <p>E-Mail: <strong style="color: #aaa;">dpv01@proton.me</strong></p>
+
             <p style="text-transform: uppercase; margin-top: 20px;">© 2026 David Vorwerk</p>
             <p id="rights-text" style="font-style: italic; font-size: 10px; margin-top: 5px;">All rights reserved. Images may not be used without permission.</p>
         </div>
@@ -204,11 +176,9 @@
         const userLang = navigator.language || navigator.userLanguage || "en";
         if (!userLang.startsWith('de')) {
             document.getElementById('nav-overview').innerText = 'Overview';
-            document.getElementById('nav-map').innerText = 'Travel-Log';
             document.getElementById('nav-contact').innerText = 'Contact';
             document.getElementById('bio-text').innerText = "Hi, I'm David, a hobby photographer with a passion for nature, animals and travel adventures.";
             document.getElementById('contact-title').innerText = 'Contact';
-            document.getElementById('map-title').innerText = 'Travel-Log';
             document.getElementById('rights-text').innerText = 'All rights reserved. Images may not be used without permission.';
         }
     } catch(e) {}
@@ -216,7 +186,6 @@
     function showSection(id) {
         document.getElementById('gallery-section').style.display = 'none';
         document.getElementById('contact-section').style.display = 'none';
-        document.getElementById('map-section').style.display = 'none';
         document.getElementById(id).style.display = 'block';
         window.scrollTo(0,0);
     }
