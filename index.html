@@ -164,7 +164,6 @@
             <a href="https://www.linkedin.com/in/david-vorwerk-b04119305" target="_blank" class="social-btn">LinkedIn</a>
         </div>
         <div style="margin-top: 60px; opacity: 0.4; font-size: 12px; letter-spacing: 1px;">
-
             <p style="text-transform: uppercase; margin-top: 20px;">© 2026 David Vorwerk</p>
             <p id="rights-text" style="font-style: italic; font-size: 10px; margin-top: 5px;">All rights reserved. Images may not be used without permission.</p>
         </div>
@@ -384,7 +383,7 @@
         if (e.key === "Escape") closeLightbox();
     });
 
-    // DYNAMISCHE GITHUB-API LADE-LOGIK
+
     const gallery = document.getElementById('gallery');
 
     async function fetchAndLoadImages() {
@@ -400,45 +399,6 @@
                 !file.name.toLowerCase().includes('bloge')
             );
 
-            images.sort((a, b) => b.name.localeCompare(a.name));
-            loadDynamicImage(images, 0);
-
-        } catch (error) {
-            console.error("Konnte GitHub API nicht abfragen:", error);
-        }
-    }
-
-    function loadDynamicImage(imageArray, index) {
-        if (index >= imageArray.length) return; 
-
-        let fileData = imageArray[index];
-        let div = document.createElement('div');
-        div.className = 'masonry-item';
-        
-        let imgElement = document.createElement('img');
-        imgElement.loading = "lazy";
-        let tempImg = new Image();
-        
-        tempImg.onload = function() {
-            imgElement.src = tempImg.src;
-            currentImages.push(imgElement.src);
-            div.appendChild(imgElement);
+            images.sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' }));
             
-            div.onclick = (e) => { e.stopPropagation(); openLightbox(imgElement.src); };
-            
-            gallery.appendChild(div);
-            loadDynamicImage(imageArray, index + 1);
-        };
-        
-        tempImg.onerror = function() {
-            loadDynamicImage(imageArray, index + 1);
-        };
-
-        tempImg.src = fileData.name;
-    }
-
-    fetchAndLoadImages();
-</script>
-
-</body>
-</html>
+            loadDynamicImage(images
