@@ -389,7 +389,9 @@
     async function fetchAndLoadImages() {
         try {
             const response = await fetch('https://api.github.com/repos/dpv12/portfolio/contents/');
-            if (!response.ok) throw new Error('Netzwerk antwortet nicht');
+            
+            if (!response.ok) throw new Error('GitHub API Limit erreicht');
+            
             const data = await response.json();
 
             let images = data.filter(file => 
@@ -399,6 +401,97 @@
                 !file.name.toLowerCase().includes('bloge')
             );
 
+
             images.sort((a, b) => b.name.localeCompare(a.name, undefined, { numeric: true, sensitivity: 'base' }));
             
-            loadDynamicImage(images
+            loadDynamicImage(images, 0);
+
+        } catch (error) {
+            console.warn("GitHub hat blockiert! Wechsle zum unzerstörbaren Fallback-Modus...");
+            loadFallbackImages();
+        }
+    }
+
+    function loadDynamicImage(imageArray, index) {
+        if (index >= imageArray.length) return; 
+
+        let fileData = imageArray[index];
+        let div = document.createElement('div');
+        div.className = 'masonry-item';
+        
+        let imgElement = document.createElement('img');
+        imgElement.loading = "lazy";
+        let tempImg = new Image();
+        
+        tempImg.onload = function() {
+            imgElement.src = tempImg.src;
+            currentImages.push(imgElement.src);
+            div.appendChild(imgElement);
+            
+            div.onclick = (e) => { e.stopPropagation(); openLightbox(imgElement.src); };
+            
+            gallery.appendChild(div);
+            loadDynamicImage(imageArray, index + 1);
+        };
+        
+        tempImg.onerror = function() {
+            loadDynamicImage(imageArray, index + 1);
+        };
+
+        tempImg.src = fileData.name;
+    }
+
+
+    function loadFallbackImages() {
+        let currentLoadId = 50; 
+
+        function tryNextFallback() {
+            if (currentLoadId < 1) return;
+            let id = currentLoadId;
+            currentLoadId--;
+
+            let extensions = ['.webp', '.jpg', '.JPG'];
+            let extIdx = 0;
+
+            function tryExt() {
+                if (extIdx >= extensions.length) {
+                    tryNextFallback(); 
+                    return;
+                }
+
+                let img = new Image();
+                img.onload = function() {
+                    let div = document.createElement('div');
+                    div.className = 'masonry-item';
+                    
+                    let displayImg = document.createElement('img');
+                    displayImg.src = img.src;
+                    displayImg.loading = "lazy";
+                    
+                    currentImages.push(displayImg.src);
+                    div.appendChild(displayImg);
+                    
+                    div.onclick = (e) => { e.stopPropagation(); openLightbox(displayImg.src); };
+                    
+                    gallery.appendChild(div);
+                    tryNextFallback(); // Bild gefunden! Gehe zur nächsten Zahl
+                };
+
+                img.onerror = function() {
+                    extIdx++;
+                    tryExt(); // Versuche das nächste Format (z.B. .jpg statt .webp)
+                };
+
+                img.src = 'foto' + id + extensions[extIdx];
+            }
+            tryExt();
+        }
+        tryNextFallback();
+    }
+
+    // Startschuss!
+    fetchAndLoadImages();
+</script>
+
+</body>
+</html>
